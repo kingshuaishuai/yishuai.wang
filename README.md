@@ -2,11 +2,15 @@
 
 个人主页、文章与生活短记。已从设计原型迁移为 Nuxt 4 应用，使用已发布的 QuireKit Design、InkWash、Markdown Editor 和 MSFE。当前在本地运行，尚未部署到正式域名。
 
+源码仓库：[kingshuaishuai/yishuai.wang](https://github.com/kingshuaishuai/yishuai.wang)。采用 [MIT License](./LICENSE)。
+
 ## 运行
 
 Node 22，pnpm 10。只使用一个预览地址：<http://127.0.0.1:3288/>。
 
 ```sh
+git clone https://github.com/kingshuaishuai/yishuai.wang.git
+cd yishuai.wang
 nvm use
 pnpm install --frozen-lockfile
 cp .env.example .env # 仅首次运行；不要覆盖已有配置
@@ -14,6 +18,8 @@ pnpm db:migrate
 pnpm db:seed         # 可选，仅加入本地示例，不写入线上
 pnpm dev
 ```
+
+启动前填写 `.env` 中自己的 GitHub OAuth 配置和 `NUXT_OWNER_GITHUB_ID`（GitHub 数字用户 ID）；作者 ID 留空时不会授予写作权限。复用站点时，也需要替换域名、个人介绍、社交链接和 Cloudflare 绑定。仓库中的文章是可选演示数据；实际文章、评论、头像和上传图片保存在部署环境的 D1/R2 中，不随源码发布。
 
 `.env`、`.wrangler` 和运行日志不进入 Git。修改数据结构前停止开发服务器，再迁移、重启，避免多个本地 D1 模拟器同时修改数据库。
 
@@ -69,3 +75,7 @@ D1 与 R2 各自有免费额度，Worker 的 SSR CPU 消耗需要在实际环境
 所有 `@quirekit/*` 依赖锁定 `0.0.1-alpha.1`，未打补丁、未修改依赖或使用私有 CSS 入口。这个版本的移动端编辑器 TaskPanel/ActionDirectory 样式导出仍有上游缺口，详见保留的[设计验收记录](./设计与交互验收.md)。
 
 [开发与验收](./docs/开发与验收.md) 记录当前实现与验证。根目录的博客规划、技术规划和设计验收是原型阶段记录，原始设计项目另行保留；当前运行入口是 `app/` 和 `server/`。
+
+## 许可证
+
+本仓库代码和随附文档按 [MIT License](./LICENSE) 发布，版权归 Yishuai 所有。使用和分发时请保留许可证及版权声明。第三方依赖保留各自的许可证；部署后上传的文章、图片和评论不属于本仓库的授权范围。

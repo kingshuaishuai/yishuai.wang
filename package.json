@@ -1,6 +1,17 @@
 {
   "name": "yishuai-wang",
   "version": "0.1.0",
+  "description": "Personal website and blog built with Nuxt and QuireKit, with online writing, Micropub, RSS and Markdown endpoints.",
+  "license": "MIT",
+  "author": "Yishuai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kingshuaishuai/yishuai.wang.git"
+  },
+  "homepage": "https://github.com/kingshuaishuai/yishuai.wang#readme",
+  "bugs": {
+    "url": "https://github.com/kingshuaishuai/yishuai.wang/issues"
+  },
   "private": true,
   "type": "module",
   "scripts": {

@@ -14,6 +14,7 @@
     "@quirekit/cm-state": "0.0.1-alpha.1",
     "@quirekit/cm-view": "0.0.1-alpha.1",
     "@quirekit/incremark": "0.0.1-alpha.1",
+    "@quirekit/inkwash": "0.0.1-alpha.1",
     "@quirekit/md-editor": "0.0.1-alpha.1",
     "@quirekit/msfe-core": "0.0.1-alpha.1",
     "@quirekit/msfe-starter-kit": "0.0.1-alpha.1",

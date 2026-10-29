@@ -16,6 +16,9 @@ import { previewRole, openLogin } from './account/session';
 /** Keeps editor code out of the public reading route. @returns Editor page module. */
 async function loadWriter() { return import('./pages/WritePage.vue'); }
 const WritePage = defineAsyncComponent(loadWriter);
+/** Loads decorative rendering independently of content and controls. @returns Ink ornament module. */
+async function loadInkPainting() { return import('./components/InkPainting.vue'); }
+const InkPainting = defineAsyncComponent(loadInkPainting);
 const dark = ref(document.documentElement.dataset.qkScheme === 'dark');
 const menuOpen = ref(false);
 const nav = [{ label: '首页', path: '/' }, { label: '文章', path: '/articles' }, { label: '项目', path: '/projects' }, { label: '生活', path: '/life' }, { label: '关于', path: '/about' }];
@@ -44,7 +47,8 @@ watch(route, closeMenu);
 
 <template>
   <QuireIconProvider :registry="quireIconRegistry">
-    <div class="site-shell" :class="{ 'site-shell--writing': writing }" @keydown.esc="dismissMenu">
+    <div class="site-shell" :class="{ 'site-shell--writing': writing, 'site-shell--menu-open': menuOpen }" @keydown.esc="dismissMenu">
+    <InkPainting v-if="!writing" :page="route" placement="heading" />
     <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
     <header class="site-header site-width" :class="{ 'site-header--writing': writing }">
       <SiteBrand v-if="!writing" />
@@ -73,6 +77,7 @@ watch(route, closeMenu);
       <CollectionPage v-else :page="route.slice(1)" />
     </main>
     <footer v-if="!writing" class="site-footer site-width">
+      <InkPainting :page="route" placement="footer" />
       <div class="footer-top"><div><SiteBrand /><p>作品、文字，和日常的回声。</p></div><div class="footer-links"><a href="#/subscribe"><RssIcon /> RSS 订阅</a><a href="/llms.txt" target="_blank">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
       <div class="footer-bottom"><span>© 2026 Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span class="preview-caption">设计预览 · 示例内容</span><a v-if="previewRole === 'owner'" class="writer-link" href="#/write"><QuireIcon name="edit" :size="16" /> 写作</a><a v-else class="writer-link" href="#/login" @click.prevent="openLogin(route)">{{ previewRole === 'guest' ? '登录' : '读者 · 身份预览' }} <QuireIcon name="arrowUpRight" :size="12" /></a></div>
     </footer>

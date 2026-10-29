@@ -19,7 +19,7 @@ pnpm dev
 ## 设计范围
 
 - 首页、文章列表、文章正文、项目、生活、关于、订阅与登录页面。
-- 原创 yishuai.wang 标记、低对比折页背景、100% 比例响应式布局与 QuireKit 统一滚动条。
+- 原创 yishuai.wang 标记、贯穿公开页面的 QuireKit 水墨、100% 比例响应式布局与 QuireKit 统一滚动条。
 - 实际输出 `/feed.xml`、`/llms.txt` 和 `/articles/:slug.md`，当前为示例文章资源。
 - 作者 / 读者 / 访客身份预览，MSFE 匿名评论、登录评论、回复与 Markdown 预览。
 - 桌面与手机布局、QuireKit Precision 深浅主题。
@@ -30,7 +30,9 @@ pnpm dev
 
 ## 依赖
 
-直接使用 npm 发布的 `@quirekit/ui`、`@quirekit/unocss-preset`、`@quirekit/incremark` 、`@quirekit/md-editor` 和 MSFE Vue / StarterKit / Core，版本锁定为 `0.0.1-alpha.1`。没有修改依赖或使用工作区内部入口。
+直接使用 npm 发布的 `@quirekit/ui`、`@quirekit/unocss-preset`、`@quirekit/incremark`、`@quirekit/inkwash`、`@quirekit/md-editor` 和 MSFE Vue / StarterKit / Core，版本锁定为 `0.0.1-alpha.1`。没有修改依赖或使用工作区内部入口。
+
+水墨直接使用公开 InkWash Vue 组件：可见时静态绘制，离开视口卸载，深浅主题与纸面同步；正文和写作区保持纯底色。WebGL 不可用时保留纸面，不影响内容。
 
 页面重置样式位于低优先级的 `preflights` 层，组件配方拥有按钮颜色与正文排版。写作页按内容任务使用紧凑独立导航；首页保留更舒展的留白。
 

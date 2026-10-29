@@ -20,6 +20,9 @@ importers:
       '@quirekit/incremark':
         specifier: 0.0.1-alpha.1
         version: 0.0.1-alpha.1(@ark-ui/vue@5.39.1(vue@3.5.40(typescript@5.9.3)))(vue@3.5.40(typescript@5.9.3))
+      '@quirekit/inkwash':
+        specifier: 0.0.1-alpha.1
+        version: 0.0.1-alpha.1(vue@3.5.40(typescript@5.9.3))
       '@quirekit/md-editor':
         specifier: 0.0.1-alpha.1
         version: 0.0.1-alpha.1(@ark-ui/vue@5.39.1(vue@3.5.40(typescript@5.9.3)))(vue@3.5.40(typescript@5.9.3))
@@ -337,6 +340,14 @@ packages:
 
   '@quirekit/incremark@0.0.1-alpha.1':
     resolution: {integrity: sha512-TKojt2joWJ2rjabP/9VbF9wHJzADxImIhtO5YSKVIfTX1wIpCF/ye+SjtkMG2BvLwQZd38Kn8ascosyJF/2WQw==}
+    peerDependencies:
+      vue: ^3.5.0
+    peerDependenciesMeta:
+      vue:
+        optional: true
+
+  '@quirekit/inkwash@0.0.1-alpha.1':
+    resolution: {integrity: sha512-HHruFayJdXaic4T7yDJEAcL6CqSymQK8MN1mrQ9PJw9r5phAa9YM2P6dno73ZeEubVA+Z3RpCgKeeEHh2vwTWg==}
     peerDependencies:
       vue: ^3.5.0
     peerDependenciesMeta:
@@ -3327,6 +3338,10 @@ snapshots:
       vue: 3.5.40(typescript@5.9.3)
     transitivePeerDependencies:
       - '@ark-ui/vue'
+
+  '@quirekit/inkwash@0.0.1-alpha.1(vue@3.5.40(typescript@5.9.3))':
+    optionalDependencies:
+      vue: 3.5.40(typescript@5.9.3)
 
   '@quirekit/lezer-markdown@0.0.1-alpha.1':
     dependencies:

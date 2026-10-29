@@ -6,6 +6,7 @@ import './styles/home.css';
 import './styles/content.css';
 import './styles/account.css';
 import './styles/comments.css';
+import './styles/ink.css';
 import App from './App.vue';
 
 createApp(App).mount('#app');

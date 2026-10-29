@@ -3,15 +3,12 @@ import { QuireIcon } from '@quirekit/ui/vue';
 import { articles, notes } from '../content';
 import ProjectFeature from '../components/ProjectFeature.vue';
 import ArticleList from '../components/ArticleList.vue';
-import PageLines from '../components/PageLines.vue';
 import RssIcon from '../components/RssIcon.vue';
 </script>
 
 <template>
   <section class="hero">
-    <PageLines />
     <div class="hero-copy"><p class="hero-greeting"><span class="hello-mark"></span>你好，我是 Yishuai。</p><h1 class="qk-type-display">认真做点东西。<br /><span>也好好记录生活。</span></h1><p class="hero-description">开发者，QuireKit 作者。<br />作品、技术思考，还有日常里值得记住的小事，<br class="desktop-break" />都放在这里。</p><div class="hero-links"><a class="text-link" href="#/about">更多关于我 <QuireIcon name="arrowRight" :size="16" /></a><a href="#/subscribe" class="hero-subscribe"><RssIcon /> 订阅更新</a></div></div>
-    <div class="hero-aside"><span class="eyebrow">近况 / NOW</span><p>QuireKit 已发布。<br />用自己的工具，<br />写自己的下一页。</p><a href="#/articles/building-quirekit">读读这段旅程 <QuireIcon name="arrowUpRight" :size="16" /></a></div>
   </section>
   <ProjectFeature />
   <section class="home-writing"><div class="section-heading"><div><span class="eyebrow">所思 · 所写</span><h2 class="qk-type-section-title">最近的文章</h2></div><a class="text-link" href="#/articles">全部文章 <QuireIcon name="arrowRight" :size="16" /></a></div><ArticleList :articles="articles" /></section>

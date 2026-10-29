@@ -1,39 +1,64 @@
-# Yishuai 的个人主页与博客
+# yishuai.wang
 
-使用已发布的 QuireKit Design、Markdown 阅读组件和 Markdown 编辑器完成的可交互设计稿。
+个人主页、文章与生活短记。已从设计原型迁移为 Nuxt 4 应用，使用已发布的 QuireKit Design、InkWash、Markdown Editor 和 MSFE。当前在本地运行，尚未部署到正式域名。
 
-## 本地查看
+## 运行
 
-固定地址：[http://127.0.0.1:3288/](http://127.0.0.1:3288/)。
+Node 22，pnpm 10。只使用一个预览地址：<http://127.0.0.1:3288/>。
 
 ```sh
 nvm use
-pnpm install
+pnpm install --frozen-lockfile
+cp .env.example .env # 仅首次运行；不要覆盖已有配置
+pnpm db:migrate
+pnpm db:seed         # 可选，仅加入本地示例，不写入线上
 pnpm dev
 ```
 
-`pnpm build` 执行 Vue 类型检查并输出静态设计预览。当前技术壳是 Vue / Vite；产品方向见[博客规划](./博客规划.md)，正式站的混合渲染、Cloudflare 部署、发布服务与 SEO 按[技术架构与 SEO 规划](./技术架构与SEO规划.md)实施。
+`.env`、`.wrangler` 和运行日志不进入 Git。修改数据结构前停止开发服务器，再迁移、重启，避免多个本地 D1 模拟器同时修改数据库。
 
-`pnpm verify:reader-ssr` 验证已发布阅读组件在无浏览器环境中生成标题、正文、链接、代码和表格 HTML。该验证不代表当前预览已迁移到 Nuxt，也不覆盖 Workers 生产运行时。
+## 实现
 
-## 设计范围
+- **内容**：D1/SQLite 保存文章、短记、用户、会话、评论及媒体索引；R2 保存图片。没有 ORM、独立搜索或缓存服务。
+- **写作**：真实 GitHub 登录，固定 GitHub 用户 ID 绑定作者。只有作者看到右上角和手机导航里的「创作管理」。支持草稿、预览、发布、撤回、删除和恢复。
+- **发布隔离**：保存草稿不会改变公开快照。编辑版本冲突返回 409，未保存输入有本机恢复副本。公开文章、RSS、Markdown 和站点索引从同一公开快照读取。
+- **评论**：MSFE 输入和预览，支持匿名、GitHub 登录与回复。提交后待审核；私有邮箱不进入公开响应或浏览器存储。
+- **SEO**：真实路径、服务端完整正文、canonical、Open Graph、BlogPosting、sitemap、404/410。开发环境默认禁止索引，私有页面始终 noindex。
+- **开放阅读**：`/feed.xml`、`/life/feed.xml`、`/articles/:slug.md`、`/life/:id.md` 和 `/llms.txt`。
+- **Micropub**：表单/JSON 创建，source/config 查询，replace/add/delete 更新，删除/恢复和独立图片上传端点。认证使用外部 IndieAuth introspection；需要配置后才能让实际第三方客户端登录。
 
-- 首页、文章列表、文章正文、项目、生活、关于、订阅与登录页面。
-- 原创 yishuai.wang 标记、贯穿公开页面的 QuireKit 水墨、100% 比例响应式布局与 QuireKit 统一滚动条。
-- 实际输出 `/feed.xml`、`/llms.txt` 和 `/articles/:slug.md`，当前为示例文章资源。
-- 作者 / 读者 / 访客身份预览，MSFE 匿名评论、登录评论、回复与 Markdown 预览。
-- 桌面与手机布局、QuireKit Precision 深浅主题。
-- 在线写作、文章与短记切换、当前浏览器草稿保存、阅读预览、发布确认交互。
-- 全站文案是用于检查页面的示例，个人介绍与文章需由作者整理后替换。
+公开页面目前使用 SSR，静态资源交给 Workers Assets。这样发布、撤回与审核不需要等待全站重建。未将当前实现描述为 SSG；是否增加静态快照，需要同时解决撤回与缓存失效。
 
-发布与评论提交是交互演示，没有网络写入。身份不代表真实登录；待审核评论仅保存在当前浏览器标签页，邮箱不存储。真实 OAuth、服务端权限与审核、Micropub、图片存储、云端草稿和真实发布尚未实现。RSS 与文本导出可本地读取，尚未部署到 yishuai.wang。
+## GitHub 登录
 
-## 依赖
+在 GitHub 的 [OAuth Apps](https://github.com/settings/developers) 创建应用。本地回调为 `http://127.0.0.1:3288/api/auth/github/callback`；生产回调为 `https://yishuai.wang/api/auth/github/callback`。建议分别配置开发与生产应用。
 
-直接使用 npm 发布的 `@quirekit/ui`、`@quirekit/unocss-preset`、`@quirekit/incremark`、`@quirekit/inkwash`、`@quirekit/md-editor` 和 MSFE Vue / StarterKit / Core，版本锁定为 `0.0.1-alpha.1`。没有修改依赖或使用工作区内部入口。
+将 Client ID、Secret 和作者的固定数字 ID 配置为 `.env.example` 中的 `NUXT_GITHUB_*`、`NUXT_OWNER_GITHUB_ID`。OAuth 只读取公开账户身份，不请求仓库权限；博客使用自己的 HttpOnly 会话，不保存 GitHub access token。
 
-水墨直接使用公开 InkWash Vue 组件：可见时静态绘制，离开视口卸载，深浅主题与纸面同步；正文和写作区保持纯底色。WebGL 不可用时保留纸面，不影响内容。
+## 校验与生产构建
 
-页面重置样式位于低优先级的 `preflights` 层，组件配方拥有按钮颜色与正文排版。写作页按内容任务使用紧凑独立导航；首页保留更舒展的留白。
+```sh
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm exec wrangler deploy --dry-run
+pnpm preview
+```
 
-发布版弹层的标题 / 关闭按钮排版仍有组件库样式导出阻塞，详见[设计与交互验收](./设计与交互验收.md)。未修改 node_modules、未使用 patch 或私有 CSS 覆盖。
+`pnpm verify:http` 在已导入本地示例、运行预览的前提下，检查 SSR 正文、SEO、公开资源、未登录权限与 Micropub CORS。浏览器验收使用内置浏览器，保持 100% 比例，不启动额外 Playwright 浏览器。
+
+## 上线配置
+
+1. 在 Cloudflare 创建一个 D1 数据库和一个私有 R2 bucket，替换 `wrangler.jsonc` 中的正式数据库 ID 与 bucket 名称。不要把 R2 设为公开桶，图片可见性由当前发布内容决定。
+2. 应用正式 D1 migrations；不要运行本地示例脚本。
+3. 配置生产 OAuth 和运行时变量：`NUXT_PUBLIC_SITE_URL=https://yishuai.wang`、`NUXT_PUBLIC_INDEXABLE=true`、`NUXT_OWNER_GITHUB_ID`。Client Secret 等凭据放入 Workers secrets，不写进仓库。
+4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
+5. 构建后绑定域名并部署，复核正式 OAuth、robots、canonical 和实际客户端发布，再提交 sitemap。当前没有执行这些线上操作。
+
+D1 与 R2 各自有免费额度，Worker 的 SSR CPU 消耗需要在实际环境测量后判断是否使用付费计划。发布前保留 D1 导出与 R2 对象备份，恢复必须同时保留媒体索引和原对象 key。
+
+## 边界
+
+所有 `@quirekit/*` 依赖锁定 `0.0.1-alpha.1`，未打补丁、未修改依赖或使用私有 CSS 入口。这个版本的移动端编辑器 TaskPanel/ActionDirectory 样式导出仍有上游缺口，详见保留的[设计验收记录](./设计与交互验收.md)。
+
+[开发与验收](./docs/开发与验收.md) 记录当前实现与验证。根目录的博客规划、技术规划和设计验收是原型阶段记录，原始设计项目另行保留；当前运行入口是 `app/` 和 `server/`。

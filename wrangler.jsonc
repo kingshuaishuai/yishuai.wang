@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yishuai-wang",
+  "compatibility_date": "2026-10-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{"binding": "BLOG_DB", "database_name": "yishuai-blog", "database_id": "local-blog", "migrations_dir": "migrations"}],
+  "r2_buckets": [{"binding": "BLOG_MEDIA", "bucket_name": "yishuai-blog-media"}]
+}

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 3288 --strictPort",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 3288 --strictPort"
+    "preview": "vite preview --host 127.0.0.1 --port 3288 --strictPort",
+    "verify:reader-ssr": "node scripts/verify-reader-ssr.mjs"
   },
   "dependencies": {
     "@ark-ui/vue": "5.39.1",

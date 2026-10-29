@@ -12,7 +12,9 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm build` 执行 Vue 类型检查并输出静态设计预览。当前技术壳是 Vue / Vite；正式站的服务端渲染与发布服务按[博客规划](./博客规划.md)实施。
+`pnpm build` 执行 Vue 类型检查并输出静态设计预览。当前技术壳是 Vue / Vite；产品方向见[博客规划](./博客规划.md)，正式站的混合渲染、Cloudflare 部署、发布服务与 SEO 按[技术架构与 SEO 规划](./技术架构与SEO规划.md)实施。
+
+`pnpm verify:reader-ssr` 验证已发布阅读组件在无浏览器环境中生成标题、正文、链接、代码和表格 HTML。该验证不代表当前预览已迁移到 Nuxt，也不覆盖 Workers 生产运行时。
 
 ## 设计范围
 

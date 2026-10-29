@@ -41,3 +41,6 @@
   .writer-status { flex-direction: column; gap: 8px; font-size: 11px; }
 }
 @media (max-width: 360px) { .writer-action-buttons { gap: 2px; } .writing-width { width: calc(100% - 24px); } }
+
+.publish-arrow { display: inline-flex; }
+@media (max-width: 360px) { .publish-arrow { display: none; } }

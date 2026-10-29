@@ -18,15 +18,20 @@ pnpm dev
 
 ## 设计范围
 
-- 首页、文章列表、文章正文、项目、生活和关于页面。
+- 首页、文章列表、文章正文、项目、生活、关于、订阅与登录页面。
+- 原创 yishuai.wang 标记、低对比折页背景、100% 比例响应式布局与 QuireKit 统一滚动条。
+- 实际输出 `/feed.xml`、`/llms.txt` 和 `/articles/:slug.md`，当前为示例文章资源。
+- 作者 / 读者 / 访客身份预览，MSFE 匿名评论、登录评论、回复与 Markdown 预览。
 - 桌面与手机布局、QuireKit Precision 深浅主题。
 - 在线写作、文章与短记切换、当前浏览器草稿保存、阅读预览、发布确认交互。
 - 全站文案是用于检查页面的示例，个人介绍与文章需由作者整理后替换。
 
-发布确认是交互演示，没有网络写入。登录、Micropub、图片存储、云端草稿、真实发布与订阅尚未实现。
+发布与评论提交是交互演示，没有网络写入。身份不代表真实登录；待审核评论仅保存在当前浏览器标签页，邮箱不存储。真实 OAuth、服务端权限与审核、Micropub、图片存储、云端草稿和真实发布尚未实现。RSS 与文本导出可本地读取，尚未部署到 yishuai.wang。
 
 ## 依赖
 
-直接使用 npm 发布的 `@quirekit/ui`、`@quirekit/unocss-preset`、`@quirekit/incremark` 和 `@quirekit/md-editor`，版本锁定为 `0.0.1-alpha.1`。没有修改依赖或使用工作区内部入口。
+直接使用 npm 发布的 `@quirekit/ui`、`@quirekit/unocss-preset`、`@quirekit/incremark` 、`@quirekit/md-editor` 和 MSFE Vue / StarterKit / Core，版本锁定为 `0.0.1-alpha.1`。没有修改依赖或使用工作区内部入口。
 
 页面重置样式位于低优先级的 `preflights` 层，组件配方拥有按钮颜色与正文排版。写作页按内容任务使用紧凑独立导航；首页保留更舒展的留白。
+
+发布版弹层的标题 / 关闭按钮排版仍有组件库样式导出阻塞，详见[设计与交互验收](./设计与交互验收.md)。未修改 node_modules、未使用 patch 或私有 CSS 覆盖。

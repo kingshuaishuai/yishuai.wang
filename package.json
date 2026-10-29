@@ -11,13 +11,20 @@
   },
   "dependencies": {
     "@ark-ui/vue": "5.39.1",
+    "@quirekit/cm-state": "0.0.1-alpha.1",
+    "@quirekit/cm-view": "0.0.1-alpha.1",
     "@quirekit/incremark": "0.0.1-alpha.1",
     "@quirekit/md-editor": "0.0.1-alpha.1",
+    "@quirekit/msfe-core": "0.0.1-alpha.1",
+    "@quirekit/msfe-starter-kit": "0.0.1-alpha.1",
+    "@quirekit/msfe-vue": "0.0.1-alpha.1",
     "@quirekit/ui": "0.0.1-alpha.1",
     "@quirekit/unocss-preset": "0.0.1-alpha.1",
+    "uuid": "11.1.0",
     "vue": "3.5.40"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "@vitejs/plugin-vue": "6.0.10",
     "typescript": "5.9.3",
     "vite": "8.3.5",

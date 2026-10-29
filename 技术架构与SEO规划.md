@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-推荐 **Nuxt + Cloudflare Workers + D1 + R2**。沿用现有 Cloudflare 部署经验，公开页面使用完整 HTML，固定页面按需预生成，写作和 Micropub 使用动态服务。
+正式主域名为 **https://yishuai.wang**。推荐 **Nuxt + Cloudflare Workers + D1 + R2**。沿用现有 Cloudflare 部署经验，公开页面使用完整 HTML，固定页面按需预生成，写作和 Micropub 使用动态服务。
 
 这是正式站的实施方案，尚未部署。当前 Vue / Vite 设计稿继续用于评审界面；它的 hash 路由和客户端渲染不能直接作为正式博客的 SEO 实现。
 
@@ -30,12 +30,13 @@ SSR、SSG 都可以提供可抓取的 HTML。选择依据是更新方式与运�
 | 运行与静态资源 | Cloudflare Workers + Static Assets | 运行 Nuxt / Nitro，分发构建资源 |
 | 内容数据库 | Cloudflare D1 | 内容、修订、标签、项目、媒体元信息与发布状态 |
 | 媒体 | Cloudflare R2 | 原图及派生图片；公开素材与草稿素材分开授权 |
-| 身份 | 单作者后台登录 + IndieAuth 兼容认证 | 网页会话和第三方 Micropub 令牌各自验证 |
+| 身份 | 作者 / 读者账户 + IndieAuth 兼容认证 | 网页会话和第三方 Micropub 令牌分别验证；访客可匿名评论 |
+| 评论输入 | MSFE Vue + StarterKit | 匿名评论、登录评论和回复使用同一编辑器；滚动到评论区时加载 |
 | 搜索与订阅 | 应用内查询、RSS / Atom | 首版按标题、摘要和标签检索；中文全文检索另行验证 |
 
 Cloudflare 提供 Nuxt 部署到 Workers 的官方路径；D1 提供 SQLite 语义的托管数据库，R2 提供对象存储。[Nuxt on Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/nuxt/)、[D1](https://developers.cloudflare.com/d1/)、[R2](https://developers.cloudflare.com/r2/)
 
-首版只维护一个博客应用，不先拆微服务，不引入独立搜索集群。数据库访问、对象存储和认证各有适配层，领域逻辑不依赖部署供应商。域名、实际套餐与图片处理服务在上线前结合实测选择；费用评估包括请求与 CPU、数据库读写、存储和图片处理，不预先承诺永久免费。
+首版只维护一个博客应用，不先拆微服务，不引入独立搜索集群。数据库访问、对象存储和认证各有适配层，领域逻辑不依赖部署供应商。实际套餐与图片处理服务在上线前结合实测选择；费用评估包括请求与 CPU、数据库读写、存储和图片处理，不预先承诺永久免费。
 
 ```mermaid
 flowchart LR
@@ -62,9 +63,12 @@ flowchart LR
 | `/about` | 预生成，允许索引；内容随部署更新 |
 | `/tags/:slug` | 有明确主题、有效内容时索引，空页和临时筛选不进入 sitemap |
 | `/search` | 可交互搜索，`noindex`，不进入 sitemap |
-| `/write`、草稿与私密预览 | 登录保护，编辑器仅在客户端挂载，`noindex`、`private, no-store` |
+| `/login` | 登录与回跳；`noindex`、`private, no-store` |
+| `/write`、草稿与私密预览 | 作者登录保护，编辑器仅在客户端挂载，`noindex`、`private, no-store` |
 | `/api/micropub`、媒体与写作接口 | 动态处理，按身份和操作授权，不做共享缓存 |
 | `/sitemap.xml`、`/feed.xml`、`/robots.txt` | 服务端输出；站点地图与订阅只包含当前公开内容 |
+| `/subscribe` | 订阅说明、复制 RSS 地址、Markdown 与 llms 入口；可预生成 |
+| `/articles/:slug.md`、`/llms.txt` | 只导出当前公开修订，与文章撤回同步 |
 
 公开正文不可整体放进 `ClientOnly`，也不能用 Canvas 或挂载编辑器代替可索引的 HTML。文章标题由页面持有，正文从合适的小节层级开始；目录锚点稳定且唯一。图片、公式、图表和嵌入内容需要可读的服务端结果或文本替代。
 
@@ -85,6 +89,26 @@ flowchart LR
 首版同步完成核心发布，Micropub 创建成功返回 `201` 与 `Location`。若未来采用异步构建，按协议使用 `202` 与 `Location`，先完成请求校验，并提供明确的待发布状态。[Micropub 创建响应](https://www.w3.org/TR/micropub/#response)
 
 草稿自动保存与手动发布分开：界面区分“本机备份”“云端已保存”“已发布”。保存请求带修订标识，多设备编辑冲突时保留两份内容。预览读取指定草稿修订，不进入公开数据查询或 Nuxt 公共 payload；私密素材不能因知道 URL 就被读取。
+
+## 账户与评论
+
+首版只需要作者、读者和未登录访客三种身份。网页登录优先使用 GitHub OAuth；作者绑定预先配置的稳定 provider subject，普通登录用户不能自行提升为作者，不以可更改的昵称或邮箱判断权限。写作、媒体上传、修订和评论审核接口均在服务端检查作者身份。会话使用 Secure、HttpOnly、SameSite Cookie，登录回调验证 state；跨站写入有 CSRF 防护，退出后会话失效。
+
+匿名和登录评论共用 MSFE 输入、Markdown 预览和回复流程。匿名昵称必填，邮箱选填且不公开；邮箱只用于经同意的回复通知，不进入页面、公开 API、日志、RSS、Markdown 或 llms 文件。Markdown 在服务端按评论允许范围渲染，不启用任意 HTML、脚本或嵌入。外链使用 `ugc nofollow` 等合适关系。
+
+评论实体保存文章 ID、可选账户 ID、公开昵称、私密联系信息、父评论 ID、Markdown、审核状态和时间。父评论必须属于同一篇文章；视觉层级控制在一层回复内。首版所有新评论先待审核，只有 approved 内容进入公开查询；提交者能看到自己的待审核状态。删除 / 隐藏父评论不能泄露被隐藏正文。防滥用包括请求限流、长度限制和重复提交控制，按实际滥用情况增加验证，不阻挡正常阅读。
+
+文章正文与获准公开的讨论由服务端输出。写评论时才需要客户端 MSFE，匿名提交不应触发整站构建。评论写入与作者内容发布是不同权限；Micropub 令牌仍单独按 scope 验证。
+
+设计稿只模拟身份与当前标签页的评论状态；不调用 OAuth、没有账户数据库、没有服务端鉴权，不可作为真实安全边界上线。正式站必须验证未登录写作被拒绝、读者写作被拒绝、作者可写、审核前评论不可公开读取、跨文章回复被拒绝、邮箱不泄露，以及退出后的凭证失效。
+
+## RSS、Markdown 与 llms
+
+- `/feed.xml` 使用 RSS 2.0，提供公开文章摘要、稳定 guid、永久 URL 和真实发布时间。HTML 中提供 `rel="alternate" type="application/rss+xml"` 自动发现；后续可增加独立短记 feed。[RSS 规范](https://www.rssboard.org/rss-specification)
+- `/articles/:slug.md` 提供当前公开文章的 Markdown，包含标题、作者、日期和 HTML 原文地址，响应为 `text/markdown; charset=utf-8`。文章页使用可见链接及 `rel="alternate" type="text/markdown"` 发现入口。不发明每篇 `/llm.txt` 标准。
+- `/llms.txt` 使用简洁的站点介绍与 Markdown 文章索引，并以 `rel="describedby"` 提供发现入口。llms.txt 是社区提案，不是搜索排名保证，也不是访问控制。[llms.txt 提案](https://llmstxt.org/)
+- 导出只含文章正文，不混入评论、个人联系信息、私密预览或草稿；不存在 / 已撤回资源返回真实 404 / 410。HTML、RSS、Markdown、llms 读取同一公开修订与发布状态，随新增、修改、撤回同步更新。
+- 当前设计稿已生成示例 feed、llms 和 Markdown 文件。链接使用正式域名以评审地址结构，尚未部署到该域名；预览带 noindex，正式站上线时按路由设置正确的索引策略。
 
 ## 缓存与更新边界
 
@@ -124,7 +148,7 @@ SEO 设置放在写作页的折叠区：默认从标题、摘要、封面推导�
 
 ## 性能、运维与恢复
 
-阅读页不下载 `MdEditor` / CodeMirror。语法高亮、公式和图表增强按内容需要加载，基础文本不依赖这些脚本才出现。使用图片尺寸占位、响应式尺寸与现代格式；首屏主要图片不延迟加载，非首屏图片按需加载。字体优先使用当前系统字体方案。
+阅读首屏不下载写作编辑器；评论区接近视口时才挂载 MSFE。语法高亮、公式和图表增强按内容需要加载，基础文本不依赖这些脚本才出现。使用图片尺寸占位、响应式尺寸与现代格式；首屏主要图片不延迟加载，非首屏图片按需加载。字体优先使用当前系统字体方案。
 
 上线后的真实用户目标：手机和桌面分别按第 75 百分位衡量，LCP ≤ 2.5 秒、INP ≤ 200 毫秒、CLS ≤ 0.1。上线前用慢网、较弱设备与生产构建做实验室检查；Lighthouse 分数不能代替真实用户指标或排名结果。[Core Web Vitals](https://web.dev/articles/vitals)
 
@@ -149,4 +173,4 @@ Workers 验证要测构建包大小、启动与渲染耗时、内存和绑定访
 - 已验证 `@quirekit/incremark@0.0.1-alpha.1` 的 `QuireMarkdown`：Node 22 + Vite SSR，在没有 `window` / `document` 的环境中输出标题、段落、真实链接、代码和表格 HTML。
 - 可用 `pnpm verify:reader-ssr` 重现。它验证阅读组件的服务端输出能力；并未把当前设计稿改成 SSR / SSG 网站。
 - 尚待验证 Nuxt / Nitro 生产构建、Workers 的实际运行限制、完整页面元信息、水合、HTML 安全处理、复杂内容、数据库发布和真实 Micropub 互通。
-- 当前网站仍是设计预览，正式域名、个人素材和线上内容尚未接入。
+- 当前网站仍是设计预览，正式域名已确定为 yishuai.wang，DNS / 部署、个人素材和线上内容尚未接入。

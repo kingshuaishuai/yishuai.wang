@@ -4,9 +4,16 @@ import sanitizeHtml from 'sanitize-html';
 import { z } from 'zod';
 import type { Content } from '../../shared/types';
 
+/** @param value - Optional cover address. @returns Whether it is a stored image or an ordinary external image URL. */
+function validCover(value: string): boolean {
+  if (!value || /^\/media\/[a-f0-9-]{36}$/.test(value)) return true;
+  try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password; }
+  catch { return false; }
+}
 export const contentSchema = z.object({
   kind: z.enum(['article', 'note']), title: z.string().trim().max(200).default(''),
   summary: z.string().trim().max(500).default(''), markdown: z.string().max(200000).default(''),
+  coverUrl: z.string().trim().max(2048).refine(validCover, '封面地址无效。').default(''),
   category: z.string().trim().max(40).default('随笔'), tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
   sourceFormat: z.enum(['markdown', 'text', 'html']).default('markdown'), source: z.string().max(200000).default(''),
   properties: z.record(z.string().max(80), z.array(z.unknown()).max(100)).default({}),

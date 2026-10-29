@@ -1,6 +1,7 @@
 node_modules/
 .nuxt/
 .output/
+.preview/
 .wrangler/
 .data/
 dist/

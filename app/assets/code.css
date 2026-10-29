@@ -1,0 +1,10 @@
+.syntax-highlight { --code-keyword: #79432d; --code-string: #35634e; --code-number: #795d25; --code-type: #654a75; --code-comment: #737373; }
+[data-qk-scheme='dark'] .syntax-highlight { --code-keyword: #dba58a; --code-string: #9fc6ac; --code-number: #d6ba7d; --code-type: #c4aed6; --code-comment: #a3a3a3; }
+.syntax-highlight .tok-keyword, .syntax-highlight .tok-operator { color: var(--code-keyword); }
+.syntax-highlight .tok-string, .syntax-highlight .tok-string2 { color: var(--code-string); }
+.syntax-highlight .tok-number, .syntax-highlight .tok-bool, .syntax-highlight .tok-atom { color: var(--code-number); }
+.syntax-highlight .tok-typeName, .syntax-highlight .tok-className, .syntax-highlight .tok-tagName, .syntax-highlight .tok-function, .syntax-highlight .tok-propertyName { color: var(--code-type); }
+.syntax-highlight .tok-comment, .syntax-highlight .tok-meta { color: var(--code-comment); font-style: italic; }
+.syntax-highlight .tok-strong { font-weight: 600; }
+.syntax-highlight .tok-emphasis { font-style: italic; }
+.syntax-highlight .tok-invalid { text-decoration: underline wavy; }

@@ -10,4 +10,19 @@
 .account-preview > small { display: block; color: var(--qk-color-text-tertiary); font-size: 12px; line-height: 1.8; margin-top: 16px; }
 .writer-identity { display: flex; align-items: center; gap: 12px; padding-block: 12px; color: var(--qk-color-text-tertiary); font-size: 11px; }
 .writer-identity a { margin-left: auto; }
+.profile-page { margin-top: 12px; }
+.profile-page .account-heading { margin-block: 18px 24px; }
+.profile-avatar { padding-block: 20px 24px; border-block: 1px solid var(--qk-color-border-subtle); }
+.profile-avatar-summary { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.profile-avatar-summary > div { min-width: 0; }
+.profile-avatar-summary h2 { font-size: 18px; font-weight: 500; overflow-wrap: anywhere; }
+.profile-avatar-summary p, .profile-hint { font-size: 12px; color: var(--qk-color-text-secondary); line-height: 1.8; margin-top: 8px; }
+.profile-avatar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.profile-session { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-block: 24px; }
+.profile-session span { font-size: 12px; color: var(--qk-color-text-tertiary); }
+.profile-session p { margin-top: 4px; font-size: 14px; overflow-wrap: anywhere; }
+.profile-session > div { min-width: 0; }
+.profile-session > button { flex-shrink: 0; }
+.profile-management { font-size: 13px; }
+.profile-loading { padding-block: 36px; color: var(--qk-color-text-tertiary); }
 @media (max-width: 600px) { .account-page { margin-top: 12px; } .account-heading { margin-block: 24px; } .account-heading h1 { font-size: 27px; } }

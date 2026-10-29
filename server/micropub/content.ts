@@ -20,12 +20,14 @@ export function fromProperties(properties: Properties, kind?: 'article' | 'note'
     const original = sourceFormat === 'html' ? source : renderContent(normalizeContent({ kind: 'note', sourceFormat: 'text', source }));
     source = original + photos.map(photo => { let url: URL; try { url = new URL(photo.value!); } catch { throw mpError(400, 'Invalid photo URL.'); } if (!['https:','http:'].includes(url.protocol)) throw mpError(400, 'Invalid photo URL.'); return `<img src="${url.href.replaceAll('&','&amp;').replaceAll('"','&quot;')}" alt="${String(photo.alt || '').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;')}">`; }).join('');
   }
-  return normalizeContent({ kind: kind || (title ? 'article' : 'note'), title, summary: text('summary'), category: tags[0] || '随笔', tags,
+  const featured = properties.featured?.[0];
+  const coverUrl = typeof featured === 'string' ? featured : featured && typeof featured === 'object' && 'value' in featured ? featured.value : '';
+  return normalizeContent({ kind: kind || (title ? 'article' : 'note'), title, summary: text('summary'), coverUrl, category: tags[0] || '随笔', tags,
     sourceFormat: photos.length && sourceFormat !== 'markdown' ? 'html' : sourceFormat, source, markdown, properties });
 }
 /** @param post - Owner projection. @returns Current source using standard HTML/plaintext content semantics. */
 export function sourceProperties(post: DraftPost): Properties {
-  return { ...post.properties, name: post.title ? [post.title] : [], summary: post.summary ? [post.summary] : [], category: post.tags,
+  return { ...post.properties, name: post.title ? [post.title] : [], summary: post.summary ? [post.summary] : [], featured: post.coverUrl ? [post.coverUrl] : [], category: post.tags,
     content: post.properties.photo?.length && post.sourceFormat !== 'markdown' ? post.properties.content || [] : [post.sourceFormat === 'text' ? post.source : { html: post.sourceFormat === 'html' ? post.source : renderContent(post) }],
     ...(post.sourceFormat === 'markdown' ? { 'mp-markdown': [post.markdown] } : {}),
     'post-status': [post.status === 'published' ? 'published' : 'draft'], ...(post.publishedAt ? { published: [post.publishedAt] } : {}) };

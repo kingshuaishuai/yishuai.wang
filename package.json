@@ -10,13 +10,15 @@
     "test": "vitest run",
     "verify:http": "tsx scripts/verify-http.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
-    "preview": "wrangler dev --ip 127.0.0.1 --port 3288",
+    "preview": "tsx scripts/preview.ts",
     "db:migrate": "wrangler d1 migrations apply BLOG_DB --local",
     "db:seed": "tsx scripts/seed.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@ark-ui/vue": "5.39.1",
+    "@lezer/highlight": "1.2.5",
+    "@quirekit/cm-language": "0.0.1-alpha.1",
     "@quirekit/cm-state": "0.0.1-alpha.1",
     "@quirekit/cm-view": "0.0.1-alpha.1",
     "@quirekit/incremark": "0.0.1-alpha.1",

@@ -10,7 +10,7 @@ import mediaGet from '../server/routes/media/[id].get';
 import { bindings } from '../server/utils/bindings';
 import { readBytes } from '../server/utils/bytes';
 import { rateLimit } from '../server/utils/rate';
-import { getPublicPost } from '../server/domain/posts';
+import { getPublicPost, getPost, draftView, savePost, transitionPost } from '../server/domain/posts';
 import type { Bindings } from '../server/domain/types';
 
 let platform: PlatformProxy<Bindings>, server: Server, origin: string;
@@ -80,4 +80,30 @@ it('rejects unsupported visibility and oversized fields without creating a publi
     expect(result.status).toBe(400);
     expect((await result.json() as { error: string }).error).toBe('invalid_request');
   }
+});
+
+it('retains featured covers through updates and removes public access when withdrawn', async () => {
+  const form = new FormData();
+  form.set('file', new File([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], 'cover.png', { type: 'image/png' }));
+  const upload = await fetch(origin + '/api/micropub/media', { method: 'POST', headers: { Authorization: 'Bearer full' }, body: form });
+  const cover = upload.headers.get('location')!;
+  const created = await send({ type: ['h-entry'], 'mp-slug': 'cover-entry', properties: { name: ['封面'], content: ['正文'], featured: [cover], 'post-status': ['draft'] } });
+  const url = created.headers.get('location')!;
+  expect(created.status).toBe(201); expect((await fetch(cover)).status).toBe(404);
+  expect((await send({ action: 'update', url, replace: { 'post-status': ['published'], summary: ['描述'] } })).status).toBe(204);
+  expect((await getPublicPost(platform.env.BLOG_DB, 'cover-entry')).coverUrl).toBe(cover);
+  expect((await fetch(cover)).status).toBe(200);
+  const source = await (await fetch(origin + '/api/micropub?q=source&url=' + encodeURIComponent(url), { headers: { Authorization: 'Bearer full' } })).json() as { properties: Record<string, unknown> };
+  expect(source.properties.featured).toEqual([cover]);
+  expect((await send({ action: 'update', url, delete: ['featured'] })).status).toBe(204);
+  expect((await getPublicPost(platform.env.BLOG_DB, 'cover-entry')).coverUrl).toBe('');
+  expect((await fetch(cover)).status).toBe(404);
+  await send({ action: 'update', url, replace: { featured: [cover] } });
+  const published = await getPublicPost(platform.env.BLOG_DB, 'cover-entry');
+  let draft = draftView(await getPost(platform.env.BLOG_DB, published.id));
+  draft = await savePost(platform.env.BLOG_DB, draft.id, draft.version, { ...draft, coverUrl: '' });
+  expect((await fetch(cover)).status).toBe(200);
+  await transitionPost(platform.env.BLOG_DB, draft.id, draft.version, 'publish');
+  expect(draft.properties.featured).toEqual([cover]);
+  expect((await fetch(cover)).status).toBe(404);
 });

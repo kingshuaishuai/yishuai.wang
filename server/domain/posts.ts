@@ -7,19 +7,19 @@ import { normalizeContent, canPublish, renderContent } from './content';
 
 /** @param row - Private database row. @returns An owner-only draft projection. */
 export function draftView(row: PostRow): DraftPost {
-  return { ...JSON.parse(row.draft_json), id: row.id, slug: row.slug, status: row.status, version: row.version, updatedAt: row.updated_at, publishedAt: row.published_at };
+  return { coverUrl: '', ...JSON.parse(row.draft_json), id: row.id, slug: row.slug, status: row.status, version: row.version, updatedAt: row.updated_at, publishedAt: row.published_at };
 }
 /** @param row - Published database row. @returns Public fields from the published snapshot only. */
 export function publicView(row: PostRow): PublicPost {
   const content = JSON.parse(row.published_json!) as Content;
-  return { ...content, properties: {}, id: row.id, slug: row.slug,
+  return { ...content, coverUrl: content.coverUrl || '', properties: {}, id: row.id, slug: row.slug,
     url: content.kind === 'article' ? `/articles/${row.slug}` : `/life/${row.id}`,
     publishedAt: row.published_at!, updatedAt: row.published_updated_at!, date: row.published_at!.slice(0,10).replaceAll('-', '.'),
     html: renderContent(content), headings: [] };
 }
 /** @param row - Published list fields only. @returns A small entry for lists and timelines. */
 function summaryView(row: PublicSummaryRow): PublicPostSummary {
-  return { id: row.id, slug: row.slug, kind: row.kind, title: row.title, summary: row.summary, category: row.category, tags: JSON.parse(row.tags),
+  return { id: row.id, slug: row.slug, kind: row.kind, title: row.title, summary: row.summary, coverUrl: row.coverUrl || '', category: row.category, tags: JSON.parse(row.tags),
     url: row.kind === 'article' ? `/articles/${row.slug}` : `/life/${row.id}`, publishedAt: row.published_at!, updatedAt: row.published_updated_at!, date: row.published_at!.slice(0, 10).replaceAll('-', '.') };
 }
 /** @param db - D1 binding. @param id - Stable entry identity. @returns Private entry or a real 404. */
@@ -45,7 +45,7 @@ export async function listPublic(db: D1Database, options: { kind?: 'article' | '
   const count = await db.prepare(`SELECT count(*) AS total FROM posts WHERE ${where}`).bind(...values).first<{ total: number }>();
   const rows = await db.prepare(`SELECT id,slug,kind,published_at,published_updated_at,
     json_extract(published_json,'$.title') AS title,json_extract(published_json,'$.summary') AS summary,
-    json_extract(published_json,'$.category') AS category,json_extract(published_json,'$.tags') AS tags
+    json_extract(published_json,'$.coverUrl') AS coverUrl,json_extract(published_json,'$.category') AS category,json_extract(published_json,'$.tags') AS tags
     FROM posts WHERE ${where} ORDER BY published_at DESC,id LIMIT ? OFFSET ?`).bind(...values, size, (page - 1) * size).all<PublicSummaryRow>();
   return { items: rows.results.map(summaryView), page, pages: Math.max(1, Math.ceil((count?.total ?? 0) / size)), total: count?.total ?? 0 };
 }

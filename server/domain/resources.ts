@@ -3,13 +3,18 @@ import type { PublicPost } from '../../shared/types';
 export function xml(value: string): string { return value.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;' }[c]!)); }
 /** @param post - Published snapshot. @param origin - Trusted canonical origin. @returns Portable Markdown with publication metadata. */
 export function markdownDocument(post: PublicPost, origin: string): string {
-  return `---\ntitle: ${JSON.stringify(post.title || '生活碎片')}\nurl: ${JSON.stringify(origin + post.url)}\npublished: ${post.publishedAt}\nupdated: ${post.updatedAt}\n---\n\n${post.title ? '# ' + post.title + '\n\n' : ''}${post.markdown}\n`;
+  return `---\ntitle: ${JSON.stringify(post.title || '生活碎片')}\ndescription: ${JSON.stringify(post.summary)}\n${post.coverUrl ? `cover: ${JSON.stringify(new URL(post.coverUrl, origin).href)}\n` : ''}url: ${JSON.stringify(origin + post.url)}\npublished: ${post.publishedAt}\nupdated: ${post.updatedAt}\n---\n\n${post.title ? '# ' + post.title + '\n\n' : ''}${post.markdown}\n`;
+}
+/** @param post - Current public snapshot. @param origin - Canonical origin. @returns Portable feed HTML including an optional cover. */
+function feedContent(post: PublicPost, origin: string): string {
+  const cover = post.coverUrl ? `<p><img src="${xml(new URL(post.coverUrl, origin).href)}" alt="" /></p>` : '';
+  return cover + post.html.replace(/(href|src)="\/(?!\/)/g, '$1="' + origin + '/');
 }
 /** @param posts - Current public entries. @param origin - Canonical origin. @param kind - Feed selection. @returns RSS 2.0 with stable IDs and full content. */
 export function rss(posts: PublicPost[], origin: string, kind: 'article' | 'note'): string {
   const path = kind === 'article' ? '/feed.xml' : '/life/feed.xml';
   const items = posts.filter(post => post.kind === kind).slice(0, 50);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Yishuai · ${kind === 'article' ? '文章' : '生活碎片'}</title><link>${xml(origin)}</link><description>作品、文字，和日常的回声。</description><language>zh-CN</language><atom:link href="${xml(origin + path)}" rel="self" type="application/rss+xml"/>${items.map(post => `<item><title>${xml(post.title || post.summary.slice(0, 60))}</title><link>${xml(origin + post.url)}</link><guid isPermaLink="false">urn:uuid:${post.id}</guid><pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate><description>${xml(post.summary)}</description><content:encoded>${xml(post.html.replace(/(href|src)="\/(?!\/)/g, '$1="' + origin + '/'))}</content:encoded></item>`).join('')}</channel></rss>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Yishuai · ${kind === 'article' ? '文章' : '生活碎片'}</title><link>${xml(origin)}</link><description>作品、文字，和日常的回声。</description><language>zh-CN</language><atom:link href="${xml(origin + path)}" rel="self" type="application/rss+xml"/>${items.map(post => `<item><title>${xml(post.title || post.summary.slice(0, 60))}</title><link>${xml(origin + post.url)}</link><guid isPermaLink="false">urn:uuid:${post.id}</guid><pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate><description>${xml(post.summary)}</description><content:encoded>${xml(feedContent(post, origin))}</content:encoded></item>`).join('')}</channel></rss>`;
 }
 /** @param posts - Current public entries. @param origin - Canonical origin. @returns XML sitemap excluding drafts and private routes. */
 export function sitemap(posts: PublicPost[], origin: string): string {

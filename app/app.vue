@@ -26,6 +26,7 @@ onMounted(() => { refresh().catch(() => {}); });
   <QuireIconProvider :registry="quireIconRegistry">
     <div class="site-shell" :class="{ 'site-shell--writing': writing, 'site-shell--menu-open': menuOpen }" @keydown.esc="dismissMenu">
       <ClientOnly><LazyInkPainting v-if="!writing" :page="route.path" placement="heading" /></ClientOnly>
+      <ClientOnly><LazyInkPainting v-if="!writing" :page="route.path" placement="margin" /></ClientOnly>
       <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
       <header class="site-header site-width" :class="{ 'site-header--writing': writing }">
         <SiteBrand v-if="!writing" />
@@ -33,7 +34,8 @@ onMounted(() => { refresh().catch(() => {}); });
         <h1 v-if="writing" class="qk-type-heading writer-top-title">写作</h1>
         <nav v-if="!writing" class="desktop-nav" aria-label="主导航">
           <NuxtLink v-for="item in nav" :key="item.path" :to="item.path" :aria-current="route.path === item.path || (item.path !== '/' && route.path.startsWith(item.path + '/')) ? 'page' : undefined">{{ item.label }}</NuxtLink>
-          <NuxtLink v-if="identity?.user.owner" to="/manage" :aria-current="route.path.startsWith('/manage') ? 'page' : undefined">创作管理</NuxtLink>
+          <NuxtLink v-if="identity && !identity.user.owner" to="/account" :aria-current="route.path === '/account' ? 'page' : undefined">个人中心</NuxtLink>
+        <NuxtLink v-if="identity?.user.owner" to="/manage" :aria-current="route.path.startsWith('/manage') ? 'page' : undefined">创作管理</NuxtLink>
         </nav>
         <div class="header-actions">
           <NuxtLink v-if="!writing" class="header-rss" to="/subscribe" aria-label="RSS 订阅"><RssIcon /></NuxtLink>
@@ -43,6 +45,7 @@ onMounted(() => { refresh().catch(() => {}); });
       </header>
       <nav v-if="menuOpen && !writing" id="mobile-nav" class="mobile-nav site-width" aria-label="手机导航">
         <NuxtLink v-for="item in nav" :key="item.path" :to="item.path" :aria-current="route.path === item.path ? 'page' : undefined">{{ item.label }}</NuxtLink>
+        <NuxtLink v-if="identity && !identity.user.owner" to="/account" :aria-current="route.path === '/account' ? 'page' : undefined">个人中心</NuxtLink>
         <NuxtLink v-if="identity?.user.owner" to="/manage" :aria-current="route.path.startsWith('/manage') ? 'page' : undefined">创作管理</NuxtLink>
         <NuxtLink to="/subscribe">订阅 <RssIcon /></NuxtLink>
       </nav>
@@ -50,7 +53,7 @@ onMounted(() => { refresh().catch(() => {}); });
       <footer v-if="!writing" class="site-footer site-width">
         <ClientOnly><LazyInkPainting :page="route.path" placement="footer" /></ClientOnly>
         <div class="footer-top"><div><SiteBrand /><p>作品、文字，和日常的回声。</p></div><div class="footer-links"><NuxtLink to="/subscribe"><RssIcon /> RSS 订阅</NuxtLink><a href="/llms.txt">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
-        <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">开发环境</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="{ path: '/login', query: { returnTo: route.fullPath } }">{{ identity?.user.name || '登录' }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
+        <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">开发环境</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="identity ? '/account' : { path: '/login', query: { returnTo: route.fullPath } }">{{ identity ? '个人中心' : '登录' }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
       </footer>
     </div>
   </QuireIconProvider>

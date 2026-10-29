@@ -11,6 +11,12 @@ importers:
       '@ark-ui/vue':
         specifier: 5.39.1
         version: 5.39.1(vue@3.5.44(typescript@5.9.3))
+      '@lezer/highlight':
+        specifier: 1.2.5
+        version: 1.2.5
+      '@quirekit/cm-language':
+        specifier: 0.0.1-alpha.1
+        version: 0.0.1-alpha.1
       '@quirekit/cm-state':
         specifier: 0.0.1-alpha.1
         version: 0.0.1-alpha.1

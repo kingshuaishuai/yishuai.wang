@@ -10,5 +10,5 @@ export type PostRow = {
 };
 /** Public list projection avoids loading private drafts and rendering article bodies. */
 export type PublicSummaryRow = Pick<PostRow, 'id' | 'slug' | 'kind' | 'published_at' | 'published_updated_at'> & {
-  title: string; summary: string; category: string; tags: string;
+  title: string; summary: string; coverUrl: string | null; category: string; tags: string;
 };

@@ -12,6 +12,8 @@ import { bindings } from '../server/utils/bindings';
 import { pageNumber } from '../server/utils/pagination';
 import { createPost, transitionPost } from '../server/domain/posts';
 import { normalizeContent } from '../server/domain/content';
+import ownerTaxonomy from '../server/api/owner/taxonomy.get';
+import { savePost } from '../server/domain/posts';
 import { createComment } from '../server/domain/comments';
 import { v4 as uuid } from 'uuid';
 import type { Bindings } from '../server/domain/types';
@@ -22,7 +24,7 @@ beforeAll(async () => {
     const schema = await readFile(new URL('../migrations/' + file, import.meta.url), 'utf8');
     for (const sql of schema.split(';').map(s => s.trim()).filter(Boolean)) await platform.env.BLOG_DB.prepare(sql).run();
   }
-  for (const id of ['owner', 'reader']) await platform.env.BLOG_DB.prepare('INSERT INTO users VALUES(?,?,?,?,?)').bind(id, id, id, 'now', 'now').run();
+  for (const id of ['owner', 'reader']) await platform.env.BLOG_DB.prepare('INSERT INTO users(id,login,name,created_at,updated_at) VALUES(?,?,?,?,?)').bind(id, id, id, 'now', 'now').run();
   const app = createApp({ debug: false });
   app.use(micropubCors);
   app.use(defineEventHandler(async event => {
@@ -33,6 +35,7 @@ beforeAll(async () => {
     if (event.path === '/body') return { length: (await readBytes(event, 32)).length };
     if (event.path.startsWith('/posts')) return ownerPosts(event);
     if (event.path.startsWith('/comments')) return ownerComments(event);
+    if (event.path === '/taxonomy') return ownerTaxonomy(event);
     return session(event);
   }));
   server = createServer(toNodeListener(app)); await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -89,4 +92,25 @@ it('paginates older author content and comments without exposing complete drafts
     expect(first.items[0]).not.toHaveProperty('markdown');
     expect((await fetch(origin + path + '?page=0', { headers })).status).toBe(400);
   }
+});
+
+it('offers private reusable categories and tags from current drafts and published content', async () => {
+  const db = platform.env.BLOG_DB;
+  let post = await createPost(db, 'owner', normalizeContent({ kind: 'article', title: 'private', markdown: 'not vocabulary', category: '已有分类', tags: ['已有标签', '已有标签'] }));
+  post = await transitionPost(db, post.id, post.version, 'publish');
+  post = await savePost(db, post.id, post.version, { ...post, category: '新分类', tags: ['新标签'] });
+  expect((await fetch(origin + '/taxonomy')).status).toBe(401);
+  const reader = await fetch(origin + '/test-login?user=reader');
+  expect((await fetch(origin + '/taxonomy', { headers: { Cookie: reader.headers.get('set-cookie')!.split(';')[0]! } })).status).toBe(403);
+  const login = await fetch(origin + '/test-login?user=owner');
+  const headers = { Cookie: login.headers.get('set-cookie')!.split(';')[0]! };
+  const options = await (await fetch(origin + '/taxonomy', { headers })).json();
+  expect(options.categories).toEqual(expect.arrayContaining(['技术', '随笔', '已有分类', '新分类']));
+  expect(options.tags).toEqual(expect.arrayContaining(['QuireKit', '已有标签', '新标签']));
+  expect(options.tags.filter((value: string) => value === '已有标签')).toHaveLength(1);
+  expect(JSON.stringify(options)).not.toContain('not vocabulary');
+  await transitionPost(db, post.id, post.version, 'delete');
+  const removed = await (await fetch(origin + '/taxonomy', { headers })).json();
+  expect(removed.tags).not.toContain('新标签');
+  expect(removed.tags).not.toContain('已有标签');
 });

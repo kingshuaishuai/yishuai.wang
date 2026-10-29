@@ -1,29 +1,59 @@
 <script setup lang="ts">
-import { MdEditor, type MdEditorInstance } from '@quirekit/md-editor/vue';
+import { MdEditor, MdProse, type MdEditorInstance, type MdEditorView } from '@quirekit/md-editor/vue';
+import type { EditorState } from '@quirekit/cm-state';
 import { QuireMarkdown } from '@quirekit/incremark/vue';
-import { QuireButton, QuireIcon, QuireInput, QuireField, QuireSegmented, QuireDialogRoot, QuireDialogContent, QuireDialogCloseTrigger, QuireDialogTrigger } from '@quirekit/ui/vue';
+import { QuireButton, QuireIcon, QuireTextarea, QuireSelect, QuireField, QuireSegmented, QuireDialogRoot, QuireDialogContent, QuireDialogCloseTrigger, QuireDialogTrigger } from '@quirekit/ui/vue';
 import type { DraftPost, Content } from '~~/shared/types';
 import '@quirekit/md-editor/styles.css';
 import '~/assets/writing.css';
 import ReadingCode from './ReadingCode.vue';
+import { codeAppearance } from '~/lib/code-appearance';
+import { onBeforeRouteLeave } from 'vue-router';
 const props = defineProps<{ initial: DraftPost }>();
 const emit = defineEmits<{ saved: [post: DraftPost] }>();
 const draft = reactive<DraftPost>(structuredClone(toRaw(props.initial)));
 const { identity, mutate } = useBlogSession();
 const editor = ref<MdEditorInstance>();
+const coverBusy = ref(false);
+const editorView = ref<MdEditorView>('document');
+const editableView = ref<MdEditorView>('document');
+const readingState = shallowRef<EditorState>();
+watch(editorView, view => {
+  if (view === 'reading') readingState.value = editor.value?.editor?.state;
+  else editableView.value = view;
+});
+const views = [{ value: 'document', label: '文档' }, { value: 'preview', label: '实时预览' }, { value: 'source', label: '源码' }, { value: 'reading', label: '阅读' }];
 const preview = ref(false), publishOpen = ref(false), busy = ref(false), notice = ref('已打开草稿'), error = ref('');
 const localBackup = ref<Content | null>(null), revision = ref(0), savedRevision = ref(0);
-const tagText = ref(draft.tags.join(', '));
 const readingComponents = { pre: ReadingCode };
 const kinds = [{ value: 'article', label: '文章' }, { value: 'note', label: '短记' }];
 const backupKey = `blog-draft:${draft.id}`;
 let timer: ReturnType<typeof setTimeout> | undefined;
 const dirty = computed(() => revision.value !== savedRevision.value);
+const leaveOpen = ref(false);
+let resolveLeave: ((leave: boolean) => void) | undefined;
+/** Keeps in-app navigation from silently abandoning unsaved source or image uploads. */
+onBeforeRouteLeave(() => {
+  if (!dirty.value && !coverBusy.value) return true;
+  backup();
+  leaveOpen.value = true;
+  return new Promise<boolean>(resolve => { resolveLeave = resolve; });
+});
+/** @param leave - Whether the captured destination can now be entered. */
+function finishLeave(leave: boolean): void {
+  const resolve = resolveLeave;
+  resolveLeave = undefined;
+  leaveOpen.value = false;
+  resolve?.(leave);
+}
+/** Persists the current draft before resuming the interrupted navigation. */
+async function saveAndLeave(): Promise<void> { if (await save()) finishLeave(true); }
+watch(leaveOpen, open => { if (!open && resolveLeave) finishLeave(false); });
 /** Takes one canonical snapshot at persistence/preview boundaries. @returns Editable content without session or publication metadata. */
 function snapshot(): Content {
   draft.markdown = editor.value?.editor?.getMarkdown() ?? draft.markdown;
-  return { kind: draft.kind, title: draft.title, summary: draft.summary, category: draft.category,
-    tags: tagText.value.split(/[,，]/).map(t => t.trim()).filter(Boolean), markdown: draft.markdown,
+  return { kind: draft.kind, title: draft.title, summary: draft.summary, coverUrl: draft.coverUrl, category: draft.category,
+    tags: [...draft.tags], markdown: draft.markdown,
     sourceFormat: draft.sourceFormat, source: draft.sourceFormat === 'markdown' ? draft.markdown : draft.source, properties: draft.sourceFormat === 'markdown' ? Object.fromEntries(Object.entries(draft.properties).filter(([key]) => !['photo', 'content', 'mp-markdown'].includes(key))) : draft.properties };
 }
 /** Keeps a recovery copy without overwriting newer server content automatically. */
@@ -41,14 +71,14 @@ function changed(): void {
 function sourceChanged(): void { if (draft.sourceFormat !== 'html') draft.sourceFormat = 'markdown'; changed(); }
 /** @returns Whether the exact captured content was saved successfully. */
 async function save(): Promise<boolean> {
-  if (busy.value) return false;
+  if (busy.value || coverBusy.value) return false;
   busy.value = true; error.value = '';
   const captured = revision.value, content = snapshot(); backup();
   try {
     const result = await mutate<DraftPost>(`/api/owner/posts/${draft.id}`, 'PUT', { version: draft.version, content });
     emit('saved', result);
     draft.version = result.version; draft.updatedAt = result.updatedAt; savedRevision.value = captured;
-    if (!dirty.value) localStorage.removeItem(backupKey);
+    if (!dirty.value) { localStorage.removeItem(backupKey); localBackup.value = null; }
     notice.value = dirty.value ? '已保存，仍有新的修改' : '已保存草稿'; return !dirty.value;
   } catch (e: any) { error.value = e.data?.message || '保存失败，内容已在本机保留。请重试。'; return false; }
   finally { busy.value = false; }
@@ -70,8 +100,10 @@ function togglePreview(): void { snapshot(); preview.value = !preview.value; }
 /** Explicitly restores a recovered copy into the editor, retaining server version checks. */
 function restoreBackup(): void {
   if (!localBackup.value) return;
-  Object.assign(draft, localBackup.value); tagText.value = draft.tags.join(', ');
-  editor.value?.editor?.replaceDocument(draft.markdown, draft.id); localBackup.value = null; changed();
+  Object.assign(draft, localBackup.value);
+  editor.value?.editor?.replaceDocument(draft.markdown, draft.id);
+  if (editorView.value === 'reading') readingState.value = editor.value?.editor?.state;
+  localBackup.value = null; changed();
 }
 /** Converts a third-party HTML article to the displayed Markdown derivative only on author request. */
 function convert(): void { draft.sourceFormat = 'markdown'; changed(); }
@@ -85,7 +117,7 @@ const images = {
     return result.url;
   },
 };
-watch([() => draft.title, () => draft.summary, () => draft.category, () => draft.kind, tagText], changed);
+watch([() => draft.title, () => draft.summary, () => draft.coverUrl, () => draft.category, () => draft.kind, () => draft.tags], changed);
 onMounted(() => {
   try { const saved = JSON.parse(localStorage.getItem(backupKey) || 'null'); if (saved?.content) localBackup.value = saved.content; } catch { /* Keep the server draft when the recovery copy is malformed. */ }
   window.addEventListener('beforeunload', beforeUnload);
@@ -93,10 +125,45 @@ onMounted(() => {
 onBeforeUnmount(() => { clearTimeout(timer); backup(); window.removeEventListener('beforeunload', beforeUnload); });
 </script>
 <template>
-  <div class="writer-actions"><QuireSegmented v-model="draft.kind" :items="kinds" label="内容类型" :disabled="!!draft.publishedAt || busy" /><div class="writer-action-buttons"><QuireButton variant="ghost" size="md" :disabled="busy" @click="save">保存</QuireButton><QuireButton variant="outline" size="md" @click="togglePreview">{{ preview ? '编辑' : '预览' }}</QuireButton><QuireDialogRoot v-model:open="publishOpen"><QuireDialogTrigger class="qk-button qk-button--neutral-solid qk-button--md" :disabled="busy" @click="snapshot">{{ draft.status === 'published' ? '更新' : '发布' }} <span class="publish-arrow"><QuireIcon name="arrowUpRight" :size="16" /></span></QuireDialogTrigger><QuireDialogContent title="准备发布" description="发布后，读者可以在文章页、订阅源和 Markdown 中看到这份内容。"><div class="publish-summary"><span class="eyebrow">{{ draft.kind === 'article' ? '文章' : '生活短记' }}</span><h2 class="qk-type-section-title">{{ draft.title || '一则新的生活记录' }}</h2><p>{{ draft.markdown.slice(0, 120) }}</p><p v-if="error" class="comment-error" role="alert">{{ error }}</p></div><template #footer><QuireDialogCloseTrigger class="qk-button qk-button--neutral-text qk-button--md">继续修改</QuireDialogCloseTrigger><QuireButton variant="solid" size="md" :disabled="busy" @click="publish">{{ busy ? '正在保存…' : '确认发布' }}</QuireButton></template></QuireDialogContent></QuireDialogRoot></div></div>
-  <div v-if="localBackup" class="recovery-banner"><p>发现一份尚未确认保存的本机备份。</p><QuireButton variant="outline" size="sm" @click="restoreBackup">恢复到编辑器</QuireButton></div>
-  <div v-if="draft.sourceFormat === 'html'" class="recovery-banner"><p>这篇内容由 HTML 客户端发布。网页编辑前需要转为 Markdown，部分样式可能变化。</p><QuireButton variant="outline" size="sm" @click="convert">转为 Markdown 编辑</QuireButton></div>
-  <p v-if="error" class="comment-error writer-error" role="alert">{{ error }}</p>
-  <div class="writer-layout"><section class="writer-paper" aria-label="写作正文"><div v-if="!preview" class="writer-title"><label v-if="draft.kind === 'article'" for="draft-title" class="sr-only">文章标题</label><input v-if="draft.kind === 'article'" id="draft-title" v-model="draft.title" :disabled="busy" placeholder="起一个标题…" /><span v-else class="note-writing-title qk-type-page-title">此刻，想记下什么？</span></div><div v-show="!preview" class="editor-mount"><MdEditor ref="editor" :markdown="draft.markdown" label="文章正文" :read-only="busy || draft.sourceFormat === 'html'" :images="images" toolbar="floating" :block-controls="false" layout="document" placeholder="从这里开始。输入 / 插入内容…" @change="sourceChanged" @error="error = '编辑器遇到问题，请先保留你的文字。'" /></div><div v-if="preview" class="writing-preview reading-body"><span class="eyebrow">阅读预览</span><h1 v-if="draft.kind === 'article'" class="qk-type-page-title">{{ draft.title || '未命名文章' }}</h1><QuireMarkdown :content="draft.markdown" :components="readingComponents" :html="false" /></div></section><aside class="writer-settings"><span class="eyebrow">这篇内容</span><QuireField label="摘要"><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="draft.summary" placeholder="留空时从正文提取" width="100%" :maxlength="500" /></template></QuireField><QuireField label="分类"><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="draft.category" width="100%" :maxlength="40" /></template></QuireField><QuireField label="标签"><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="tagText" placeholder="用逗号分隔" width="100%" /></template></QuireField><div class="writer-setting"><span>可见范围</span><strong>{{ draft.status === 'published' ? '已发布，修改须再次发布' : '草稿，仅自己可见' }}</strong></div><NuxtLink v-if="draft.status === 'published'" :to="draft.kind === 'article' ? `/articles/${draft.slug}` : `/life/${draft.id}`" class="text-link">查看公开页面 ↗</NuxtLink></aside></div>
-  <div class="writer-status"><span role="status">{{ notice }}</span><span>保存草稿后，再发布给读者。</span></div>
+  <div class="writer-workspace">
+    <div class="writer-actions">
+      <QuireSelect v-model="draft.kind" :items="kinds" label="内容类型" variant="text" width="88px" size="md" :disabled="!!draft.publishedAt || busy" />
+      <div v-show="!preview" class="writer-modes"><QuireSegmented v-model="editorView" :items="views" label="编辑视图" :disabled="busy" /></div>
+      <div class="writer-action-buttons">
+        <QuireButton variant="ghost" size="md" :disabled="busy || coverBusy" @click="save">保存</QuireButton>
+        <QuireButton variant="outline" size="md" @click="togglePreview">{{ preview ? '编辑' : '预览' }}</QuireButton>
+        <QuireDialogRoot v-model:open="publishOpen">
+          <QuireDialogTrigger as-child><QuireButton variant="solid" size="md" :disabled="busy || coverBusy" @click="snapshot">{{ draft.status === 'published' ? '更新' : '发布' }}<template #trailing><QuireIcon name="arrowUpRight" /></template></QuireButton></QuireDialogTrigger>
+          <QuireDialogContent title="准备发布" description="发布后，读者可以在文章页、订阅源和 Markdown 中看到这份内容。">
+            <div class="publish-summary"><span class="eyebrow">{{ draft.kind === 'article' ? '文章' : '生活短记' }}</span><h2 class="qk-type-section-title">{{ draft.title || '一则新的生活记录' }}</h2><p>{{ draft.markdown.slice(0, 120) }}</p><p v-if="error" class="comment-error" role="alert">{{ error }}</p></div>
+            <template #footer><QuireDialogCloseTrigger as-child><QuireButton variant="text" size="md">继续修改</QuireButton></QuireDialogCloseTrigger><QuireButton variant="solid" size="md" :disabled="busy || coverBusy" @click="publish">{{ busy ? '正在保存…' : '确认发布' }}</QuireButton></template>
+          </QuireDialogContent>
+        </QuireDialogRoot>
+      </div>
+    </div>
+    <div v-if="localBackup" class="recovery-banner"><p>发现一份尚未确认保存的本机备份。</p><QuireButton variant="outline" size="sm" @click="restoreBackup">恢复到编辑器</QuireButton></div>
+    <div v-if="draft.sourceFormat === 'html'" class="recovery-banner"><p>这篇内容由 HTML 客户端发布。网页编辑前需要转为 Markdown，部分样式可能变化。</p><QuireButton variant="outline" size="sm" @click="convert">转为 Markdown 编辑</QuireButton></div>
+    <p v-if="error" class="comment-error writer-error" role="alert">{{ error }}</p>
+    <div class="writer-layout">
+      <section class="writer-paper" aria-label="写作正文">
+        <div v-show="!preview && editorView !== 'reading'" class="editor-mount syntax-highlight"><MdEditor ref="editor" :view="editableView" :markdown="draft.markdown" label="文章正文" :read-only="busy || draft.sourceFormat === 'html'" :images="images" :extensions="[codeAppearance]" toolbar="fixed" :block-controls="true" layout="document" placeholder="从这里开始。输入 / 插入内容…" @change="sourceChanged" @error="error = '编辑器遇到问题，请先保留你的文字。'">
+          <template #header><div class="writer-title"><label v-if="draft.kind === 'article'" for="draft-title" class="sr-only">文章标题</label><input v-if="draft.kind === 'article'" id="draft-title" v-model="draft.title" :disabled="busy" placeholder="起一个标题…" /><span v-else class="note-writing-title qk-type-page-title">此刻，想记下什么？</span></div></template>
+        </MdEditor></div>
+        <div v-if="!preview && editorView === 'reading'" class="writer-reading"><h1 v-if="draft.kind === 'article'" class="writer-reading-title">{{ draft.title || '未命名文章' }}</h1><MdProse v-if="readingState" :state="readingState" :components="readingComponents" :html="false" /></div>
+        <div v-if="preview" class="writing-preview reading-body"><span class="eyebrow">阅读预览</span><h1 v-if="draft.kind === 'article'" class="qk-type-page-title">{{ draft.title || '未命名文章' }}</h1><img v-if="draft.coverUrl" :src="draft.coverUrl" class="reading-cover" alt="封面预览" /><p v-if="draft.summary" class="preview-description">{{ draft.summary }}</p><QuireMarkdown :content="draft.markdown" :components="readingComponents" :html="false" /></div>
+      </section>
+      <aside class="writer-settings" aria-label="内容设置">
+        <PostCoverUpload v-model="draft.coverUrl" :post-id="draft.id" :disabled="busy" @busy="coverBusy = $event" />
+        <QuireField label="描述（选填）"><template #default="{ controlProps }"><QuireTextarea v-bind="controlProps" v-model="draft.summary" placeholder="留空时从正文提取" :rows="3" :max-rows="8" auto-resize :maxlength="500" :disabled="busy" /></template></QuireField>
+        <PostTaxonomy v-model:category="draft.category" v-model:tags="draft.tags" :disabled="busy" />
+        <div class="writer-setting"><span>可见范围</span><strong>{{ draft.status === 'published' ? '已发布，修改须再次发布' : '草稿，仅自己可见' }}</strong></div>
+        <NuxtLink v-if="draft.status === 'published'" :to="draft.kind === 'article' ? `/articles/${draft.slug}` : `/life/${draft.id}`" class="text-link">查看公开页面 <QuireIcon name="arrowUpRight" :size="16" /></NuxtLink>
+      </aside>
+    </div>
+    <div class="writer-status"><span role="status">{{ notice }}</span><span>保存草稿后，再发布给读者。</span></div>
+    <QuireDialogRoot v-model:open="leaveOpen"><QuireDialogContent title="还有修改未保存" description="保存到草稿后再离开，返回时就能继续编辑。" size="small">
+      <p v-if="coverBusy" class="comment-status">封面正在上传，请稍候。</p><p v-if="error" class="comment-error" role="alert">{{ error }}</p>
+      <template #footer><QuireButton variant="text" size="md" @click="finishLeave(false)">继续编辑</QuireButton><QuireButton variant="solid" size="md" :disabled="busy || coverBusy" @click="saveAndLeave">{{ busy ? '正在保存…' : '保存并离开' }}</QuireButton></template>
+    </QuireDialogContent></QuireDialogRoot>
+  </div>
 </template>

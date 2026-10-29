@@ -19,6 +19,26 @@ beforeAll(async () => {
 afterAll(async () => { await platform?.dispose(); });
 
 describe('publication consistency on local D1', () => {
+  it('keeps optional covers and descriptions within publication snapshots and machine-readable exports', async () => {
+    const db = platform.env.BLOG_DB, origin = 'https://yishuai.wang';
+    let draft = await createPost(db, 'owner', normalizeContent({ kind: 'article', title: 'Cover', markdown: '正文', summary: '独立描述' }));
+    expect(draft.coverUrl).toBe('');
+    draft = await transitionPost(db, draft.id, draft.version, 'publish');
+    const coverUrl = '/media/' + uuid();
+    draft = await savePost(db, draft.id, draft.version, { ...draft, coverUrl, summary: '新的描述' });
+    expect((await getPublicPost(db, draft.slug)).coverUrl).toBe('');
+    expect((await getPublicPost(db, draft.slug)).summary).toBe('独立描述');
+    draft = await transitionPost(db, draft.id, draft.version, 'publish');
+    const publicPost = await getPublicPost(db, draft.slug);
+    expect((await listPublic(db)).items.find(p => p.id === draft.id)?.coverUrl).toBe(coverUrl);
+    expect(markdownDocument(publicPost, origin)).toContain('cover: "' + origin + coverUrl + '"');
+    expect(rss([publicPost], origin, 'article')).toContain(origin + coverUrl);
+    draft = await savePost(db, draft.id, draft.version, { ...draft, coverUrl: '' });
+    draft = await transitionPost(db, draft.id, draft.version, 'publish');
+    expect((await getPublicPost(db, draft.slug)).coverUrl).toBe('');
+    expect(() => normalizeContent({ ...draft, coverUrl: 'javascript:alert(1)' })).toThrow();
+    expect(() => normalizeContent({ ...draft, coverUrl: '//third-party.test/image.png' })).toThrow();
+  });
   it('isolates draft edits, rejects stale writers and withdraws every derived resource', async () => {
     const db = platform.env.BLOG_DB;
     const original = normalizeContent({ kind: 'article', title: '真实标题', markdown: '第一版正文', summary: '第一版摘要' });

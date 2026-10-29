@@ -4,12 +4,13 @@ import { v4 as uuid } from 'uuid';
 import type { PublicComment } from '../../shared/types';
 import { renderComment } from './content';
 import { getPost } from './posts';
+import { avatarUrl } from './avatars';
 /** @param db - Database. @param postId - Public entry. @param ownerId - Configured author subject. @returns Approved discussion without private fields. */
 export async function listComments(db: D1Database, postId: string, ownerId: string): Promise<PublicComment[]> {
   const post = await getPost(db, postId);
   if (post.status !== 'published') throw createError({ statusCode: 404, message: '内容未公开。' });
-  const rows = await db.prepare("SELECT c.id,c.parent_id,c.user_id,c.author,c.html,c.created_at FROM comments c LEFT JOIN comments p ON p.id=c.parent_id WHERE c.post_id=? AND c.status='approved' AND (c.parent_id IS NULL OR p.status='approved') ORDER BY c.created_at,c.id LIMIT 200").bind(postId).all<{ id: string; parent_id: string | null; user_id: string | null; author: string; html: string; created_at: string }>();
-  return rows.results.map(row => ({ id: row.id, parentId: row.parent_id, author: row.author, owner: row.user_id === ownerId, html: row.html, createdAt: row.created_at }));
+  const rows = await db.prepare("SELECT c.id,c.parent_id,c.user_id,c.author,c.html,c.created_at,u.avatar_id FROM comments c LEFT JOIN comments p ON p.id=c.parent_id LEFT JOIN users u ON u.id=c.user_id WHERE c.post_id=? AND c.status='approved' AND (c.parent_id IS NULL OR p.status='approved') ORDER BY c.created_at,c.id LIMIT 200").bind(postId).all<{ id: string; parent_id: string | null; user_id: string | null; author: string; html: string; created_at: string; avatar_id: string | null }>();
+  return rows.results.map(row => ({ id: row.id, parentId: row.parent_id, author: row.author, owner: row.user_id === ownerId, avatarUrl: avatarUrl(row.avatar_id), html: row.html, createdAt: row.created_at }));
 }
 /** @param db - Database. @param input - Validated comment with verified optional identity. @returns Receipt only; pending text stays private. */
 export async function createComment(db: D1Database, input: { postId: string; parentId?: string; userId?: string; author: string; email?: string; markdown: string; requestKey: string }): Promise<{ id: string; status: 'pending' }> {

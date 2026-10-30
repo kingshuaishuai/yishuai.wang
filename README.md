@@ -52,7 +52,7 @@ pnpm dev
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec wrangler deploy --dry-run
+pnpm deploy:check
 pnpm preview
 ```
 
@@ -62,11 +62,15 @@ pnpm preview
 
 ## 上线配置
 
-1. 在 Cloudflare 创建一个 D1 数据库和一个私有 R2 bucket，替换 `wrangler.jsonc` 中的正式数据库 ID 与 bucket 名称。不要把 R2 设为公开桶，图片可见性由当前发布内容决定。
-2. 应用正式 D1 migrations；不要运行本地示例脚本。
-3. 配置生产 OAuth 和运行时变量：`NUXT_PUBLIC_SITE_URL=https://yishuai.wang`、`NUXT_PUBLIC_INDEXABLE=true`、`NUXT_OWNER_GITHUB_ID`。Client Secret 等凭据放入 Workers secrets，不写进仓库。
+`wrangler.jsonc` 的默认配置只用于本地，保留 `local-blog` 数据库标识；`env.production` 使用独立的正式 D1、私有 R2 和域名。复用项目时替换该环境中的账户、资源 ID、域名与作者 ID。部署命令显式读取 Nitro 生成的配置文件，再选择生产环境；本地预览仍使用默认环境。
+
+1. 在 Cloudflare 创建 D1 数据库和私有 R2 bucket，将其配置到 `env.production`。不要把 R2 设为公开桶，图片可见性由当前发布内容决定。
+2. 使用 `pnpm db:migrate:production` 应用正式迁移；不要向正式数据库运行本地示例脚本。
+3. 在忽略的 `.env.production` 中填写生产 `NUXT_GITHUB_CLIENT_ID`、`NUXT_GITHUB_CLIENT_SECRET`，执行 `pnpm exec wrangler secret bulk .env.production --config wrangler.jsonc --env production`。非敏感运行时变量在生产配置中维护；凭据仅上传到 Workers secrets，不进入 Git 或构建产物。
 4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
-5. 构建后绑定域名并部署，复核正式 OAuth、robots、canonical 和实际客户端发布，再提交 sitemap。当前没有执行这些线上操作。
+5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
+
+当前已创建正式 D1 `yishuai-blog`（三项迁移已应用）与 R2 `yishuai-blog-media`，域名 DNS 已接入 Cloudflare；首次发布与线上验收待完成。本地草稿、用户和媒体不自动迁入正式环境。
 
 D1 与 R2 各自有免费额度，Worker 的 SSR CPU 消耗需要在实际环境测量后判断是否使用付费计划。发布前保留 D1 导出与 R2 对象备份，恢复必须同时保留媒体索引和原对象 key。
 

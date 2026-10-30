@@ -20,9 +20,13 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "verify:http": "tsx scripts/verify-http.ts",
+    "verify:production": "tsx scripts/verify-production.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "preview": "tsx scripts/preview.ts",
     "db:migrate": "wrangler d1 migrations apply BLOG_DB --local",
+    "db:migrate:production": "wrangler d1 migrations apply BLOG_DB --remote --config wrangler.jsonc --env production",
+    "deploy:check": "wrangler deploy --config .output/server/wrangler.json --env production --dry-run",
+    "deploy": "pnpm build && wrangler deploy --config .output/server/wrangler.json --env production",
     "db:seed": "tsx scripts/seed.ts",
     "postinstall": "nuxt prepare"
   },

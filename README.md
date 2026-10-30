@@ -70,9 +70,11 @@ pnpm preview
 4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
 5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
 
-当前已创建正式 D1 `yishuai-blog`（三项迁移已应用）与 R2 `yishuai-blog-media`，域名 DNS 已接入 Cloudflare；首次发布与线上验收待完成。本地草稿、用户和媒体不自动迁入正式环境。
+正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（三项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt、登录配置及访客权限已通过生产只读验收；生产 OAuth 回调与作者操作仍需真实会话验收。本地草稿、用户和媒体不自动迁入正式环境。
 
-D1 与 R2 各自有免费额度，Worker 的 SSR CPU 消耗需要在实际环境测量后判断是否使用付费计划。发布前保留 D1 导出与 R2 对象备份，恢复必须同时保留媒体索引和原对象 key。
+DNS 切换期间，验收脚本可用 `BLOG_VERIFY_ADDRESS` 指定经公共 DNS 确认的地址。该选项只影响这次检查的连接地址，保留正式域名、TLS 证书验证和全部断言，不修改系统 DNS；正常情况下直接运行 `pnpm verify:production`。
+
+D1 与 R2 各自有免费额度。当前账户使用 Workers Free，首次上线抽样的三次公开页面请求 CPU 分别为 27、117、112ms，均成功，但超过 [免费版每次 10ms 的 CPU 配额](https://developers.cloudflare.com/workers/platform/limits/)。仍需静态化或降低渲染开销后复验，不能据此承诺免费版稳定运行；尚未升级 Workers 付费计划。发布前保留 D1 导出与 R2 对象备份，恢复必须同时保留媒体索引和原对象 key。
 
 ## 边界
 

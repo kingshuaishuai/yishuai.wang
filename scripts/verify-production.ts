@@ -1,6 +1,38 @@
 import assert from 'node:assert/strict';
+import { request } from 'node:https';
+import { isIP } from 'node:net';
 
 const origin = new URL(process.env.BLOG_VERIFY_ORIGIN || 'https://yishuai.wang').origin;
+const address = process.env.BLOG_VERIFY_ADDRESS;
+if (address) assert.ok(isIP(address), 'BLOG_VERIFY_ADDRESS must be an IP from a trusted DNS lookup');
+
+/**
+ * Resolve only this verification request while keeping the original HTTPS host and certificate checks.
+ * @param path - Relative production route.
+ * @returns Response without following redirects or sending cookies.
+ */
+function resolvedResponse(path: string): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const req = request(origin + path, {
+      autoSelectFamily: false,
+      lookup: (_hostname, _options, callback) => callback(null, address!, isIP(address!)),
+    }, incoming => {
+      const chunks: Buffer[] = [];
+      incoming.on('data', chunk => chunks.push(Buffer.from(chunk)));
+      incoming.on('error', reject);
+      incoming.on('end', () => {
+        const headers = new Headers();
+        for (let index = 0; index < incoming.rawHeaders.length; index += 2) {
+          headers.append(incoming.rawHeaders[index]!, incoming.rawHeaders[index + 1]!);
+        }
+        resolve(new Response(Buffer.concat(chunks), { status: incoming.statusCode, headers }));
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(20000, () => req.destroy(new Error(`Verification timed out: ${path}`)));
+    req.end();
+  });
+}
 
 /**
  * Check a deployed route without following redirects or sending a session cookie.
@@ -9,7 +41,7 @@ const origin = new URL(process.env.BLOG_VERIFY_ORIGIN || 'https://yishuai.wang')
  * @returns The response for further checks.
  */
 async function response(path: string, status = 200): Promise<Response> {
-  const result = await fetch(origin + path, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
+  const result = address ? await resolvedResponse(path) : await fetch(origin + path, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
   assert.equal(result.status, status, path);
   return result;
 }

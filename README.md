@@ -70,7 +70,7 @@ pnpm preview
 4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
 5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
 
-正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（三项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt、登录配置及访客权限已通过生产只读验收；生产 OAuth 回调与作者操作仍需真实会话验收。本地草稿、用户和媒体不自动迁入正式环境。
+正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（三项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。生产内容发布和媒体上传仍待验收。本地草稿、用户和媒体不自动迁入正式环境。
 
 DNS 切换期间，验收脚本可用 `BLOG_VERIFY_ADDRESS` 指定经公共 DNS 确认的地址。该选项只影响这次检查的连接地址，保留正式域名、TLS 证书验证和全部断言，不修改系统 DNS；正常情况下直接运行 `pnpm verify:production`。
 

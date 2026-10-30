@@ -6,7 +6,7 @@ import type Composer from './MsfeComposer.client.vue';
 const props = defineProps<{ post: PublicPost }>();
 const { identity, mutate } = useBlogSession();
 const { data: comments, error: loadError } = await useFetch<PublicComment[]>(`/api/posts/${props.post.id}/comments`);
-const expanded = ref(false), nickname = ref(''), email = ref(''), markdown = ref(''), website = ref('');
+const draftReady = ref(false), nickname = ref(''), email = ref(''), markdown = ref(''), website = ref('');
 const reply = ref<PublicComment | null>(null), error = ref(''), status = ref(''), busy = ref(false);
 const requestKey = ref('');
 const composer = ref<InstanceType<typeof Composer>>();
@@ -20,8 +20,8 @@ function preserve(): void {
 }
 /** @param source - Current canonical MSFE source. */
 function updateDraft(source: string): void { markdown.value = source; preserve(); }
-/** @param comment - Optional reply recipient. */
-async function begin(comment?: PublicComment): Promise<void> { reply.value = comment || null; expanded.value = true; await nextTick(); composer.value?.focus(); }
+/** @param comment - Reply recipient for the existing composer. */
+async function begin(comment: PublicComment): Promise<void> { reply.value = comment; await nextTick(); composer.value?.focus(); }
 /** Submits a real comment; only an accepted receipt clears the draft. @param source - Markdown source from MSFE. */
 async function submit(source: string): Promise<void> {
   if (busy.value) return;
@@ -36,7 +36,8 @@ async function submit(source: string): Promise<void> {
 }
 onMounted(() => {
   requestKey.value = uuid();
-  try { const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null'); if (saved) { markdown.value = String(saved.markdown || ''); nickname.value = String(saved.nickname || ''); requestKey.value = saved.requestKey || requestKey.value; expanded.value = !!markdown.value; } } catch { /* A malformed local backup never replaces server content. */ }
+  try { const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null'); if (saved) { markdown.value = String(saved.markdown || ''); nickname.value = String(saved.nickname || ''); requestKey.value = saved.requestKey || requestKey.value; } } catch { /* A malformed local backup never replaces server content. */ }
+  draftReady.value = true;
 });
 onBeforeUnmount(preserve);
 </script>
@@ -45,8 +46,19 @@ onBeforeUnmount(preserve);
     <p v-if="loadError" role="status">评论暂时未能载入。</p>
     <article v-for="comment in ordered" :key="comment.id" class="comment-message" :class="{ 'comment-message--reply': comment.parentId }"><QuireAvatar class="comment-avatar" :name="comment.author" :fallback="comment.author.slice(0, 1)" :src="comment.avatarUrl || undefined" size="sm" /><div class="comment-message-body"><div class="comment-byline"><strong>{{ comment.author }}</strong><span v-if="comment.owner" class="comment-owner">作者</span><time :datetime="comment.createdAt">{{ comment.createdAt.slice(0, 10) }}</time></div><div v-html="comment.html" /><button type="button" class="comment-reply" @click="begin(comment)">回复 <QuireIcon name="arrowUpRight" :size="12" /></button></div></article>
     <div class="comment-write-heading"><h3>留下你的想法</h3><NuxtLink v-if="!identity" :to="{ path: '/login', query: { returnTo: post.url + '#comments-title' } }" @click="preserve">登录评论 <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink><NuxtLink v-else to="/account" @click="preserve"><QuireAvatar :name="identity.user.name" :fallback="identity.user.name.slice(0, 1)" :src="identity.user.avatarUrl || undefined" size="xs" />{{ identity.user.name }}</NuxtLink></div>
-    <button v-if="!expanded" type="button" class="comment-start" @click="begin()"><span>说点什么？一个想法，或一个问题。</span><QuireIcon name="edit" :size="16" /></button>
-    <div v-else class="comment-form"><div v-if="reply" class="comment-reply-context"><span>回复 {{ reply.author }}</span><QuireButton variant="text" size="sm" @click="reply = null">取消回复</QuireButton></div><div v-if="!identity" class="comment-fields"><QuireField label="昵称" required><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="nickname" width="100%" :maxlength="60" autocomplete="nickname" /></template></QuireField><QuireField label="邮箱（选填，不公开）"><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="email" type="email" width="100%" autocomplete="email" /></template></QuireField></div><input v-model="website" class="honeypot" tabindex="-1" aria-hidden="true" autocomplete="off" name="website" /><ClientOnly><LazyMsfeComposer ref="composer" :initial="markdown" :submit-label="busy ? '提交中…' : reply ? '提交回复' : '提交评论'" :busy="busy" @draft="updateDraft" @submit="submit" /></ClientOnly><p v-if="error" class="comment-error" role="alert">{{ error }}</p></div>
+    <div class="comment-form">
+      <div v-if="reply" class="comment-reply-context"><span>回复 {{ reply.author }}</span><QuireButton variant="text" size="sm" @click="reply = null">取消回复</QuireButton></div>
+      <div v-if="!identity" class="comment-fields">
+        <QuireField label="昵称" required><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="nickname" width="100%" :maxlength="60" autocomplete="nickname" @blur="preserve" /></template></QuireField>
+        <QuireField label="邮箱（选填，不公开）"><template #default="{ controlProps }"><QuireInput v-bind="controlProps" v-model="email" type="email" width="100%" autocomplete="email" /></template></QuireField>
+      </div>
+      <input v-model="website" class="honeypot" tabindex="-1" aria-hidden="true" autocomplete="off" name="website" />
+      <div class="comment-composer-shell"><ClientOnly>
+        <LazyMsfeComposer v-if="draftReady" ref="composer" :initial="markdown" :submit-label="busy ? '提交中…' : reply ? '提交回复' : '提交评论'" :busy="busy" @draft="updateDraft" @submit="submit" />
+        <template #fallback><div class="comment-composer-placeholder" role="status">正在载入评论编辑器…</div></template>
+      </ClientOnly></div>
+      <p v-if="error" class="comment-error" role="alert">{{ error }}</p>
+    </div>
     <p class="comment-policy">无需登录也可以评论。友善交流，审核后公开。</p><p v-if="status" class="comment-status" role="status">{{ status }}</p>
   </section>
 </template>

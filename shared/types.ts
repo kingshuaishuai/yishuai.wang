@@ -1,3 +1,4 @@
+import type { AiSummary } from './ai';
 /** Supported content languages; missing historical values mean Chinese. */
 export type ContentLanguage = 'zh' | 'en';
 /** A public language version, emitted only after it has been published. */
@@ -11,7 +12,7 @@ export type Content = {
 /** Only the current published snapshot may enter public responses. */
 export type PublicPost = Content & {
   id: string; slug: string; url: string; publishedAt: string; updatedAt: string;
-  date: string; html: string; headings: { id: string; title: string }[]; translations: Translation[];
+  date: string; html: string; headings: { id: string; title: string }[]; translations: Translation[]; aiSummary?: AiSummary | null;
 };
 /** Lightweight index entry; lists never carry complete article bodies. */
 export type PublicPostSummary = Pick<PublicPost, 'id' | 'slug' | 'kind' | 'language' | 'title' | 'summary' | 'coverUrl' | 'category' | 'tags' | 'url' | 'publishedAt' | 'updatedAt' | 'date'>;

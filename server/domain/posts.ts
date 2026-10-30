@@ -5,6 +5,7 @@ import type { Content, ContentLanguage, DraftPost, PublicPost, PublicPostSummary
 import type { PostRow, PublicSummaryRow } from './types';
 import { postPath } from '../../shared/language';
 import { normalizeContent, canPublish, renderContent } from './content';
+import { publicSummary } from './ai/read';
 
 /** @param row - Private database row. @returns An owner-only draft projection. */
 export function draftView(row: PostRow): DraftPost {
@@ -34,7 +35,7 @@ export async function getPublicPost(db: D1Database, identity: string, kind: 'art
   const row = await db.prepare(`SELECT * FROM posts WHERE ${kind === 'article' ? 'slug' : 'id'}=? AND kind=?`).bind(identity, kind).first<PostRow>();
   if (!row || row.status !== 'published' || !row.published_json) throw createError({ statusCode: row?.status === 'deleted' && row.published_at ? 410 : 404, message: '这篇内容暂未公开。' });
   const related = await db.prepare("SELECT id,slug,kind,COALESCE(json_extract(published_json,'$.language'),'zh') AS language FROM posts WHERE COALESCE(translation_group,id)=? AND status='published' AND published_json IS NOT NULL ORDER BY language").bind(row.translation_group || row.id).all<PublicSummaryRow>();
-  return publicView(row, related.results.map(item => ({ language: item.language, url: postPath(item) })));
+  return { ...publicView(row, related.results.map(item => ({ language: item.language, url: postPath(item) }))), aiSummary: await publicSummary(db, row) };
 }
 /** @param db - D1 binding. @param options - Bounded public list filters. @returns Public pagination without draft fields. */
 export async function listPublic(db: D1Database, options: { kind?: 'article' | 'note'; page?: number; size?: number; query?: string; category?: string; language?: ContentLanguage | 'all' } = {}): Promise<PostPage> {

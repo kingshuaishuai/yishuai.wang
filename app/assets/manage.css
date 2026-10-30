@@ -29,3 +29,5 @@
 .recovery-banner { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 0; color:var(--qk-color-text-secondary); }
 .writer-error { margin:16px 0; }
 @media(max-width:600px) { .manage-post { flex-direction:column; align-items:start; gap:12px; } .manage-heading h1 { font-size:26px; } }
+
+.manage-settings { margin-left: auto; }

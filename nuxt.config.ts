@@ -16,7 +16,7 @@ export default defineNuxtConfig({
     '~/assets/base.css', '~/assets/home.css', '~/assets/content.css', '~/assets/account.css',
     '~/assets/comments.css', '~/assets/ink.css', '~/assets/manage.css', '~/assets/code.css'],
   runtimeConfig: {
-    ownerGithubId: '', githubClientId: '', githubClientSecret: '',
+    ownerGithubId: '', githubClientId: '', githubClientSecret: '', aiSettingsSecret: '',
     indieauthTokenEndpoint: '', indieauthAuthorizationEndpoint: '',
     indieauthIntrospectionEndpoint: '', indieauthIntrospectionAuthorization: '',
     public: { siteUrl: 'https://yishuai.wang', indexable: false },

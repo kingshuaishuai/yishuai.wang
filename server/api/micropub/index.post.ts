@@ -7,6 +7,7 @@ import { fromProperties, sourceProperties, updateProperties } from '../../microp
 import { postFromUrl, updatePost } from '../../micropub/posts';
 import { createPost, draftView, transitionPost } from '../../domain/posts';
 import { canPublish } from '../../domain/content';
+import { scheduleSummary } from '../../utils/ai-summary';
 export default defineEventHandler(async event => {
   try {
     const data = await input(event), scopes = await authorize(event, data.accessToken), db = bindings(event).BLOG_DB, origin = siteOrigin(event);
@@ -19,7 +20,7 @@ export default defineEventHandler(async event => {
       const properties = data.properties || {}, content = fromProperties(properties), publish = properties['post-status']?.[0] !== 'draft';
       if (publish && !canPublish(content)) throw mpError(400, 'Content is required.');
       let post = await createPost(db, String(useRuntimeConfig(event).ownerGithubId), content, data.slug || (typeof properties['mp-slug']?.[0] === 'string' ? properties['mp-slug'][0] : undefined));
-      if (publish) post = await transitionPost(db, post.id, post.version, 'publish');
+      if (publish) { post = await transitionPost(db, post.id, post.version, 'publish'); scheduleSummary(event, post.id); }
       setHeader(event, 'Location', origin + postPath(post));
       setResponseStatus(event, 201); return '';
     }
@@ -27,8 +28,12 @@ export default defineEventHandler(async event => {
     if (action === 'update') {
       if (!data.replace && !data.add && !data.delete) throw mpError(400, 'Provide replace, add or delete properties.');
       const properties = updateProperties(sourceProperties(draftView(row)), data);
-      await updatePost(db, row, fromProperties(properties, row.kind), properties['post-status']?.[0] !== 'draft');
-    } else await transitionPost(db, row.id, row.version, action === 'delete' ? 'delete' : 'restore');
+      const post = await updatePost(db, row, fromProperties(properties, row.kind), properties['post-status']?.[0] !== 'draft');
+      if (post.status === 'published') scheduleSummary(event, post.id);
+    } else {
+      const post = await transitionPost(db, row.id, row.version, action === 'delete' ? 'delete' : 'restore');
+      if (post.status === 'published') scheduleSummary(event, post.id);
+    }
     setResponseStatus(event, 204); return '';
   } catch (error) { return errorResponse(event, error); }
 });

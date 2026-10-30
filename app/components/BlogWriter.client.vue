@@ -178,6 +178,7 @@ onBeforeUnmount(() => { clearTimeout(timer); backup(); window.removeEventListene
         <QuireField :label="t('描述（选填）')"><template #default="{ controlProps }"><QuireTextarea v-bind="controlProps" v-model="draft.summary" :placeholder="t('留空时从正文提取')" :rows="3" :max-rows="8" auto-resize :maxlength="500" :disabled="busy" /></template></QuireField>
         <PostTaxonomy v-model:category="draft.category" v-model:tags="draft.tags" :disabled="busy" />
         <div class="writer-setting"><span>{{ t('可见范围') }}</span><strong>{{ draft.status === 'published' ? t('已发布，修改须再次发布') : t('草稿，仅自己可见') }}</strong></div>
+        <PostAiSummary v-if="draft.kind === 'article'" :post-id="draft.id" :version="draft.version" :published="draft.status === 'published'" />
         <NuxtLink v-if="draft.status === 'published'" :to="postPath(draft)" class="text-link">{{ t('查看公开页面') }} <QuireIcon name="arrowUpRight" :size="16" /></NuxtLink>
       </aside>
     </div>

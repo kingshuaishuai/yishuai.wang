@@ -29,6 +29,7 @@ pnpm dev
 - **写作**：真实 GitHub 登录，固定 GitHub 用户 ID 绑定作者。只有作者看到右上角和手机导航里的「创作管理」。支持草稿、预览、发布、撤回、删除和恢复。
 - **发布隔离**：保存草稿不会改变公开快照。编辑版本冲突返回 409，未保存输入有本机恢复副本。公开文章、RSS、Markdown 和站点索引从同一公开快照读取。
 - **中英文**：中文保持原地址，英文使用 `/en`。首页与列表默认显示当前界面语言，文章可筛选中文、English 或全部。写作设置可选择内容语言、创建关联版本；两个版本独立编辑和发布，允许只发布一种语言，不自动翻译正文。
+- **智能总结**：作者在创作管理弹窗中配置 DeepSeek Key 与自定义模型 ID。发布后后台生成，文章标题下用机器人图标标明「智能总结」；中英文分别生成并缓存，访客阅读不会调用模型。写作侧栏可通过 SSE 查看重新生成的进度，草稿不发送给模型，失败不影响发布。
 - **评论**：常驻 MSFE 编辑器，使用 md-editor 的文档、实时预览和源码三种视图；切换保留内容、选区和撤销记录，长评论在等高输入区内滚动。支持匿名、GitHub 登录与回复，提交后待审核；私有邮箱不进入公开响应或浏览器存储。
 - **个人中心**：所有登录用户可以在 `/account` 上传、裁剪或恢复自己的头像；普通读者没有写作或审核权限。作者从「创作管理 → 设置头像」进入。原图只在浏览器中裁剪，保存后的头像进入 R2。
 - **内容呈现**：管理列表的标题区域可以直接编辑，类型和发布状态使用日期旁的小号中性 Tag。封面和描述均选填，无封面不占位；描述使用多行输入，分类单选、标签多选，复用已有内容中的选项。封面和描述随公开快照进入列表、分享元信息、RSS 和 Markdown；文章详情直接显示标题与正文。目录在标题旁固定显示并跟随滚动高亮，窄屏使用折叠目录。
@@ -46,6 +47,12 @@ pnpm dev
 在 GitHub 的 [OAuth Apps](https://github.com/settings/developers) 创建应用。本地回调为 `http://127.0.0.1:3288/api/auth/github/callback`；生产回调为 `https://yishuai.wang/api/auth/github/callback`。建议分别配置开发与生产应用。
 
 将 Client ID、Secret 和作者的固定数字 ID 配置为 `.env.example` 中的 `NUXT_GITHUB_*`、`NUXT_OWNER_GITHUB_ID`。OAuth 只读取公开账户身份，不请求仓库权限；博客使用自己的 HttpOnly 会话，不保存 GitHub access token。
+
+## 智能总结配置
+
+先设置私有的 `NUXT_AI_SETTINGS_SECRET`（32 字节随机值的 64 位十六进制表示），生产环境使用 Worker secret。随后在「创作管理 → 智能总结」中填写 DeepSeek Key 和模型 ID，并勾选自动总结。Key 加密保存在 D1，已有 Key 不回传浏览器；备份恢复时需同时保留加密密钥。
+
+模型名称可直接修改，常用型号仅供快速填写。保存配置不会批量生成既有文章；已有文章在写作侧栏点击「生成」即可。仅调用 DeepSeek 官方文本流接口，使用费用计入所配置 Key 的账户。生成与缓存规则见[智能总结](./docs/智能总结.md)。
 
 ## 校验与生产构建
 
@@ -71,7 +78,7 @@ pnpm preview
 4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
 5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
 
-正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（四项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。实际中文文章的保存、发布和封面上传已完成验收。本地草稿、用户和媒体不自动迁入正式环境。
+正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（五项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。实际中文文章的保存、发布和封面上传已完成验收。本地草稿、用户和媒体不自动迁入正式环境。
 
 DNS 切换期间，验收脚本可用 `BLOG_VERIFY_ADDRESS` 指定经公共 DNS 确认的地址。该选项只影响这次检查的连接地址，保留正式域名、TLS 证书验证和全部断言，不修改系统 DNS；正常情况下直接运行 `pnpm verify:production`。
 

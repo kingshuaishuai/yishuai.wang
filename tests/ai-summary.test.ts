@@ -61,7 +61,7 @@ it('streams UTF-8 content only, uses the fixed endpoint and rejects partial or f
   expect(deltas.join('')).not.toContain('not for readers');
   const [url, request] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
   expect(url).toBe('https://api.deepseek.com/chat/completions');
-  expect(request.redirect).toBe('error');
+  expect(request.redirect).toBe('manual');
   expect(JSON.parse(request.body as string)).toMatchObject({ model: 'deepseek-future-2030', stream: true, thinking: { type: 'disabled' } });
   expect(request.body).toContain('English, 50–75 words');
   fetcher.mockImplementation(async () => providerResponse('unfinished', 'length'));
@@ -135,4 +135,15 @@ it('decodes multi-line SSE frames and never accepts an unfinished frame', async 
   const frames = [];
   for await (const frame of readSse(response.body!)) frames.push(frame);
   expect(frames).toEqual([{ event: 'delta', data: 'one\ntwo' }]);
+});
+
+it('reports only bounded provider diagnostics without credentials or response content', async () => {
+  const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    vi.stubGlobal('fetch', async () => new Response('private response ' + apiKey, { status: 502 }));
+    await expect(streamSummary(normalizeContent({ kind: 'article', title: 'Private title', markdown: 'Private article' }), apiKey, 'deepseek-flash')).rejects.toMatchObject({ code: 'provider' });
+    expect(warning).toHaveBeenCalledWith('AI summary provider failed', { phase: 'response', status: 502, eventStream: false, code: 'provider', cause: 'other' });
+    const output = JSON.stringify(warning.mock.calls);
+    for (const value of [apiKey, 'private response', 'Private title', 'Private article']) expect(output).not.toContain(value);
+  } finally { warning.mockRestore(); }
 });

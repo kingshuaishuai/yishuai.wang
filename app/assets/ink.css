@@ -12,7 +12,6 @@
 .site-footer { position: relative; }
 @media (prefers-reduced-motion: no-preference) { .ink-painting-canvas { transition: opacity .45s ease-out; } }
 @media (max-width: 800px) { .ink-painting--heading { width: 52vw; height: 210px; } .ink-painting--heading.ink-painting--home { width: 58vw; height: 340px; } }
-@media (max-width: 720px) { .site-shell--menu-open > .ink-painting--heading { display: none; } }
 .ink-painting--heading.ink-painting--compact { height: 120px; }
 @media (max-width: 600px) {
   .ink-painting--heading { width: 245px; height: 200px; right: -8px; top: 68px; }

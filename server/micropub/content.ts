@@ -22,12 +22,12 @@ export function fromProperties(properties: Properties, kind?: 'article' | 'note'
   }
   const featured = properties.featured?.[0];
   const coverUrl = typeof featured === 'string' ? featured : featured && typeof featured === 'object' && 'value' in featured ? featured.value : '';
-  return normalizeContent({ kind: kind || (title ? 'article' : 'note'), title, summary: text('summary'), coverUrl, category: tags[0] || '随笔', tags,
+  return normalizeContent({ kind: kind || (title ? 'article' : 'note'), title, language: text('lang') || 'zh', summary: text('summary'), coverUrl, category: tags[0] || '随笔', tags,
     sourceFormat: photos.length && sourceFormat !== 'markdown' ? 'html' : sourceFormat, source, markdown, properties });
 }
 /** @param post - Owner projection. @returns Current source using standard HTML/plaintext content semantics. */
 export function sourceProperties(post: DraftPost): Properties {
-  return { ...post.properties, name: post.title ? [post.title] : [], summary: post.summary ? [post.summary] : [], featured: post.coverUrl ? [post.coverUrl] : [], category: post.tags,
+  return { ...post.properties, lang: [post.language || 'zh'], name: post.title ? [post.title] : [], summary: post.summary ? [post.summary] : [], featured: post.coverUrl ? [post.coverUrl] : [], category: post.tags,
     content: post.properties.photo?.length && post.sourceFormat !== 'markdown' ? post.properties.content || [] : [post.sourceFormat === 'text' ? post.source : { html: post.sourceFormat === 'html' ? post.source : renderContent(post) }],
     ...(post.sourceFormat === 'markdown' ? { 'mp-markdown': [post.markdown] } : {}),
     'post-status': [post.status === 'published' ? 'published' : 'draft'], ...(post.publishedAt ? { published: [post.publishedAt] } : {}) };

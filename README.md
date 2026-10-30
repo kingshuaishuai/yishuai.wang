@@ -1,12 +1,12 @@
 # yishuai.wang
 
-个人主页、文章与生活短记。已从设计原型迁移为 Nuxt 4 应用，使用已发布的 QuireKit Design、InkWash、Markdown Editor 和 MSFE。当前在本地运行，尚未部署到正式域名。
+个人主页、文章与生活短记。已从设计原型迁移为 Nuxt 4 应用，使用已发布的 QuireKit Design、InkWash、Markdown Editor 和 MSFE。正式站为 [yishuai.wang](https://yishuai.wang)。
 
 源码仓库：[kingshuaishuai/yishuai.wang](https://github.com/kingshuaishuai/yishuai.wang)。采用 [MIT License](./LICENSE)。
 
 ## 运行
 
-Node 22，pnpm 10。只使用一个预览地址：<http://127.0.0.1:3288/>。
+Node 22，pnpm 10。开发服务固定为 <http://127.0.0.1:3288/>，`pnpm dev` 使用 Nuxt/Vite 热更新及本地 D1/R2 模拟器。
 
 ```sh
 git clone https://github.com/kingshuaishuai/yishuai.wang.git
@@ -28,14 +28,15 @@ pnpm dev
 - **内容**：D1/SQLite 保存文章、短记、用户、会话、评论及媒体索引；R2 保存图片。没有 ORM、独立搜索或缓存服务。
 - **写作**：真实 GitHub 登录，固定 GitHub 用户 ID 绑定作者。只有作者看到右上角和手机导航里的「创作管理」。支持草稿、预览、发布、撤回、删除和恢复。
 - **发布隔离**：保存草稿不会改变公开快照。编辑版本冲突返回 409，未保存输入有本机恢复副本。公开文章、RSS、Markdown 和站点索引从同一公开快照读取。
+- **中英文**：中文保持原地址，英文使用 `/en`。首页与列表默认显示当前界面语言，文章可筛选中文、English 或全部。写作设置可选择内容语言、创建关联版本；两个版本独立编辑和发布，允许只发布一种语言，不自动翻译正文。
 - **评论**：常驻 MSFE 编辑器，使用 md-editor 的文档、实时预览和源码三种视图；切换保留内容、选区和撤销记录，长评论在等高输入区内滚动。支持匿名、GitHub 登录与回复，提交后待审核；私有邮箱不进入公开响应或浏览器存储。
 - **个人中心**：所有登录用户可以在 `/account` 上传、裁剪或恢复自己的头像；普通读者没有写作或审核权限。作者从「创作管理 → 设置头像」进入。原图只在浏览器中裁剪，保存后的头像进入 R2。
-- **内容呈现**：管理列表的标题区域可以直接编辑，类型和发布状态使用日期旁的小号中性 Tag。封面和描述均选填，无封面不占位；描述使用多行输入，分类单选、标签多选，复用已有内容中的选项。封面随公开快照进入列表、正文、分享元信息、RSS 和 Markdown。
+- **内容呈现**：管理列表的标题区域可以直接编辑，类型和发布状态使用日期旁的小号中性 Tag。封面和描述均选填，无封面不占位；描述使用多行输入，分类单选、标签多选，复用已有内容中的选项。封面和描述随公开快照进入列表、分享元信息、RSS 和 Markdown；文章详情直接显示标题与正文。目录在标题旁固定显示并跟随滚动高亮，窄屏使用折叠目录。
 - **编辑视图**：文档、实时预览和源码使用同一个 md-editor 实例，恢复完整工具栏与左侧块控件；阅读通过公共 MdProse 投影当前 EditorState，标题和正文共用边距。文章预览单独展示博客排版。站内返回和关闭页面均提醒未保存修改。
 - **代码高亮**：编辑与阅读复用 md-editor 的公开语言目录和 Lezer 语义标记，明暗主题分别配色；文章服务端直接输出高亮。未知语言和超长代码按原文显示，代码内容不作为 HTML 执行。
-- **页面外观**：全站使用 QuireKit Ink 明暗主题，每页至少占满一屏；写作操作栏合并排列，状态栏随正文撑到底部。山景相对正文定位，宽屏左侧有淡远山。首页提供 QuireKit GitHub 组织及 X 账号入口；按钮图标使用 QuireKit 的 leading/trailing 插槽。
-- **SEO**：真实路径、服务端完整正文、canonical、Open Graph、BlogPosting、sitemap、404/410。开发环境默认禁止索引，私有页面始终 noindex。
-- **开放阅读**：`/feed.xml`、`/life/feed.xml`、`/articles/:slug.md`、`/life/:id.md` 和 `/llms.txt`。
+- **页面外观**：全站使用 QuireKit Ink 明暗主题，每页至少占满一屏；写作操作栏合并排列，状态栏随正文撑到底部。山景相对正文定位，宽屏左侧有淡远山。首页提供 QuireKit GitHub 组织及 X 账号入口；按钮图标使用 QuireKit 的 leading/trailing 插槽。手机导航使用 QuireKit Popover 浮层，不挤占正文；文章语言与分类使用文字式 Select。
+- **SEO**：真实路径、服务端完整正文、canonical、Open Graph、BlogPosting、sitemap、404/410。真实已发布语言版本输出互相对应的 hreflang。开发环境默认禁止索引，私有页面始终 noindex。
+- **开放阅读**：`/feed.xml`、`/life/feed.xml` 为中文订阅，英文加 `/en` 前缀，`?lang=all` 可订阅全部。文章和短记在永久地址后加 `.md` 获取原文，总站提供 `/llms.txt`。
 - **Micropub**：表单/JSON 创建，source/config 查询，replace/add/delete 更新，删除/恢复和独立图片上传端点。认证使用外部 IndieAuth introspection；需要配置后才能让实际第三方客户端登录。
 
 公开页面目前使用 SSR，静态资源交给 Workers Assets。这样发布、撤回与审核不需要等待全站重建。未将当前实现描述为 SSG；是否增加静态快照，需要同时解决撤回与缓存失效。
@@ -56,9 +57,9 @@ pnpm deploy:check
 pnpm preview
 ```
 
-`pnpm preview` 运行 `.output` 的独立快照 `.preview`，下一轮构建不会删除正在服务的文件；端口已占用时拒绝覆盖快照。构建结束后停止旧预览，再启动即可更新。
+生产构建使用独立的 `.nuxt-production` 目录，不覆盖开发服务的 `.nuxt`。`pnpm preview` 不提供热更新，运行 `.output` 的独立快照 `.preview`，下一轮构建不会删除正在服务的文件；端口已占用时拒绝覆盖快照。构建结束后停止旧预览，再启动即可更新。
 
-`pnpm verify:http` 在已导入本地示例、运行预览的前提下，检查 SSR 正文与语法标记、SEO、公开资源、未登录权限与 Micropub CORS。浏览器验收使用内置浏览器，保持 100% 比例，不启动额外 Playwright 浏览器。
+`pnpm verify:http` 在已导入本地示例、运行开发服务或构建预览的前提下，检查 SSR 正文与语法标记、SEO、公开资源、未登录权限与 Micropub CORS。浏览器验收使用内置浏览器，保持 100% 比例，不启动额外 Playwright 浏览器。
 
 ## 上线配置
 
@@ -70,7 +71,7 @@ pnpm preview
 4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
 5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
 
-正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（三项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。生产内容发布和媒体上传仍待验收。本地草稿、用户和媒体不自动迁入正式环境。
+正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（四项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。实际中文文章的保存、发布和封面上传已完成验收。本地草稿、用户和媒体不自动迁入正式环境。
 
 DNS 切换期间，验收脚本可用 `BLOG_VERIFY_ADDRESS` 指定经公共 DNS 确认的地址。该选项只影响这次检查的连接地址，保留正式域名、TLS 证书验证和全部断言，不修改系统 DNS；正常情况下直接运行 `pnpm verify:production`。
 
@@ -80,7 +81,7 @@ D1 与 R2 各自有免费额度。当前账户使用 Workers Free，首次上线
 
 所有 `@quirekit/*` 依赖锁定 `0.0.1-alpha.1`，未打补丁、未修改依赖或使用私有 CSS 入口。这个版本的移动端编辑器 TaskPanel/ActionDirectory 样式导出仍有上游缺口，详见保留的[设计验收记录](./设计与交互验收.md)。
 
-[开发与验收](./docs/开发与验收.md) 记录当前实现与验证。根目录的博客规划、技术规划和设计验收是原型阶段记录，原始设计项目另行保留；当前运行入口是 `app/` 和 `server/`。
+[开发与验收](./docs/开发与验收.md) 记录当前实现与验证；[多语言内容与阅读导航](./docs/多语言内容与阅读导航.md) 说明版本关联和阅读规则。根目录的博客规划、技术规划和设计验收是原型阶段记录，原始设计项目另行保留；当前运行入口是 `app/` 和 `server/`。
 
 ## 许可证
 

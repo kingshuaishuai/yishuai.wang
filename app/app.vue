@@ -1,60 +1,51 @@
 <script setup lang="ts">
 import { quireIconRegistry } from '@quirekit/ui';
-import { QuireIcon, QuireIconButton, QuireIconProvider } from '@quirekit/ui/vue';
+import { QuireIcon, QuireIconButton, QuireIconProvider, QuireLocaleProvider } from '@quirekit/ui/vue';
 const route = useRoute();
+const { t, locale, basePath, localePath, switchPath } = useBlogLocale();
 const { identity, refresh } = useBlogSession();
 const scheme = useCookie<'light' | 'dark'>('blog-scheme', { default: () => 'light', sameSite: 'lax', maxAge: 31536000 });
 const dark = computed(() => scheme.value === 'dark');
-const menuOpen = ref(false);
-const nav = [{ label: '首页', path: '/' }, { label: '文章', path: '/articles' }, { label: '项目', path: '/projects' }, { label: '生活', path: '/life' }, { label: '关于', path: '/about' }];
-const writing = computed(() => route.path.startsWith('/write'));
+const nav = computed(() => [{ label: t('首页', 'Home'), path: '/' }, { label: t('文章', 'Articles'), path: '/articles' }, { label: t('项目', 'Projects'), path: '/projects' }, { label: t('生活', 'Life'), path: '/life' }, { label: t('关于', 'About'), path: '/about' }]);
+const writing = computed(() => basePath.value.startsWith('/write'));
 const config = useRuntimeConfig();
-useHead(() => ({ htmlAttrs: { 'data-qk-scheme': dark.value ? 'dark' : 'light' }, link: [
-  { rel: 'alternate', type: 'application/rss+xml', title: 'Yishuai 的文章', href: '/feed.xml' },
+useHead(() => ({ htmlAttrs: { lang: locale.value === 'zh' ? 'zh-CN' : 'en', 'data-qk-scheme': dark.value ? 'dark' : 'light' }, link: [
+  { rel: 'alternate', type: 'application/rss+xml', title: t('Yishuai 的文章', 'Articles by Yishuai'), href: localePath('/feed.xml') },
 ] }));
 /** Toggles the theme on both server renders and client navigation. */
 function toggleTheme(): void { scheme.value = dark.value ? 'light' : 'dark'; }
-/** Returns focus when the mobile navigation is dismissed. */
-function dismissMenu(): void { if (!menuOpen.value) return; menuOpen.value = false; document.getElementById('mobile-nav-trigger')?.focus(); }
 /** Moves keyboard focus into the current page. */
 function focusMain(): void { document.getElementById('main-content')?.focus(); }
-watch(() => route.fullPath, () => { menuOpen.value = false; });
 onMounted(() => { refresh().catch(() => {}); });
 </script>
 
 <template>
-  <QuireIconProvider :registry="quireIconRegistry">
-    <div class="site-shell" :class="{ 'site-shell--writing': writing, 'site-shell--menu-open': menuOpen }" @keydown.esc="dismissMenu">
-      <ClientOnly><LazyInkPainting v-if="!writing" :page="route.path" placement="heading" /></ClientOnly>
-      <ClientOnly><LazyInkPainting v-if="!writing" :page="route.path" placement="margin" /></ClientOnly>
-      <a class="skip-link" href="#main-content" @click.prevent="focusMain">跳到主要内容</a>
+  <QuireLocaleProvider :locale="locale"><QuireIconProvider :registry="quireIconRegistry">
+    <div class="site-shell" :class="{ 'site-shell--writing': writing }">
+      <ClientOnly><LazyInkPainting v-if="!writing" :page="basePath" placement="heading" /></ClientOnly>
+      <ClientOnly><LazyInkPainting v-if="!writing" :page="basePath" placement="margin" /></ClientOnly>
+      <a class="skip-link" href="#main-content" @click.prevent="focusMain">{{ t('跳到主要内容', 'Skip to content') }}</a>
       <header class="site-header site-width" :class="{ 'site-header--writing': writing }">
         <SiteBrand v-if="!writing" />
-        <NuxtLink v-else to="/manage" class="writer-back"><QuireIcon name="arrowLeft" :size="16" /><span>返回</span></NuxtLink>
-        <h1 v-if="writing" class="qk-type-heading writer-top-title">写作</h1>
-        <nav v-if="!writing" class="desktop-nav" aria-label="主导航">
-          <NuxtLink v-for="item in nav" :key="item.path" :to="item.path" :aria-current="route.path === item.path || (item.path !== '/' && route.path.startsWith(item.path + '/')) ? 'page' : undefined">{{ item.label }}</NuxtLink>
-          <NuxtLink v-if="identity && !identity.user.owner" to="/account" :aria-current="route.path === '/account' ? 'page' : undefined">个人中心</NuxtLink>
-        <NuxtLink v-if="identity?.user.owner" to="/manage" :aria-current="route.path.startsWith('/manage') ? 'page' : undefined">创作管理</NuxtLink>
+        <NuxtLink v-else :to="localePath('/manage')" class="writer-back"><QuireIcon name="arrowLeft" :size="16" /><span>{{ t('返回', 'Back') }}</span></NuxtLink>
+        <h1 v-if="writing" class="qk-type-heading writer-top-title">{{ t('写作', 'Write') }}</h1>
+        <nav v-if="!writing" class="desktop-nav" :aria-label="t('主导航', 'Main navigation')">
+          <NuxtLink v-for="item in nav" :key="item.path" :to="localePath(item.path)" :aria-current="basePath === item.path || (item.path !== '/' && basePath.startsWith(item.path + '/')) ? 'page' : undefined">{{ item.label }}</NuxtLink>
+          <NuxtLink v-if="identity && !identity.user.owner" :to="localePath('/account')" :aria-current="basePath === '/account' ? 'page' : undefined">{{ t('个人中心', 'Account') }}</NuxtLink>
+        <NuxtLink v-if="identity?.user.owner" :to="localePath('/manage')" :aria-current="basePath.startsWith('/manage') ? 'page' : undefined">{{ t('创作管理', 'Manage') }}</NuxtLink>
         </nav>
-        <div class="header-actions">
-          <NuxtLink v-if="!writing" class="header-rss" to="/subscribe" aria-label="RSS 订阅"><RssIcon /></NuxtLink>
-          <QuireIconButton :label="dark ? '切换浅色' : '切换深色'" size="lg" @click="toggleTheme"><QuireIcon :name="dark ? 'sun' : 'moon'" /></QuireIconButton>
-          <QuireIconButton v-if="!writing" id="mobile-nav-trigger" class="mobile-toggle" :label="menuOpen ? '收起导航' : '打开导航'" size="lg" :aria-expanded="menuOpen" aria-controls="mobile-nav" @click="menuOpen = !menuOpen"><QuireIcon :name="menuOpen ? 'close' : 'menu'" /></QuireIconButton>
+        <div class="header-actions"><NuxtLink class="language-switch" :to="switchPath" :lang="locale === 'zh' ? 'en' : 'zh-CN'" :aria-label="t('切换到英文', 'Switch to Chinese')">{{ t('EN', '中文') }}</NuxtLink>
+          <NuxtLink v-if="!writing" class="header-rss" :to="localePath('/subscribe')" :aria-label="t('RSS 订阅', 'RSS feeds')"><RssIcon /></NuxtLink>
+          <QuireIconButton :label="dark ? t('切换浅色', 'Switch to light mode') : t('切换深色', 'Switch to dark mode')" size="lg" @click="toggleTheme"><QuireIcon :name="dark ? 'sun' : 'moon'" /></QuireIconButton>
+          <SiteMobileNav v-if="!writing" :items="nav" :identity="identity" />
         </div>
       </header>
-      <nav v-if="menuOpen && !writing" id="mobile-nav" class="mobile-nav site-width" aria-label="手机导航">
-        <NuxtLink v-for="item in nav" :key="item.path" :to="item.path" :aria-current="route.path === item.path ? 'page' : undefined">{{ item.label }}</NuxtLink>
-        <NuxtLink v-if="identity && !identity.user.owner" to="/account" :aria-current="route.path === '/account' ? 'page' : undefined">个人中心</NuxtLink>
-        <NuxtLink v-if="identity?.user.owner" to="/manage" :aria-current="route.path.startsWith('/manage') ? 'page' : undefined">创作管理</NuxtLink>
-        <NuxtLink to="/subscribe">订阅 <RssIcon /></NuxtLink>
-      </nav>
       <main id="main-content" tabindex="-1" :class="['site-width', { 'writing-width': writing }]"><NuxtPage /></main>
       <footer v-if="!writing" class="site-footer site-width">
-        <ClientOnly><LazyInkPainting :page="route.path" placement="footer" /></ClientOnly>
-        <div class="footer-top"><div><SiteBrand /><p>作品、文字，和日常的回声。</p></div><div class="footer-links"><NuxtLink to="/subscribe"><RssIcon /> RSS 订阅</NuxtLink><a href="/llms.txt">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
-        <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">开发环境</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="identity ? '/account' : { path: '/login', query: { returnTo: route.fullPath } }">{{ identity ? '个人中心' : '登录' }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
+        <ClientOnly><LazyInkPainting :page="basePath" placement="footer" /></ClientOnly>
+        <div class="footer-top"><div><SiteBrand /><p>{{ t('作品、文字，和日常的回声。', 'Projects, writing, and everyday life.') }}</p></div><div class="footer-links"><NuxtLink :to="localePath('/subscribe')"><RssIcon /> {{ t('RSS 订阅', 'RSS feeds') }}</NuxtLink><a href="/llms.txt">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
+        <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">{{ t('开发环境', 'Development preview') }}</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="identity ? localePath('/account') : { path: localePath('/login'), query: { returnTo: route.fullPath } }">{{ identity ? t('个人中心', 'Account') : t('登录', 'Sign in') }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
       </footer>
     </div>
-  </QuireIconProvider>
+  </QuireIconProvider></QuireLocaleProvider>
 </template>

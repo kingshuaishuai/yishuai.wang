@@ -1,9 +1,11 @@
 import type { Session } from '~~/shared/types';
+import { localizedPath, pathLanguage } from '~~/shared/language';
 
 /** @returns Request-scoped identity and authenticated write helpers. */
 export function useBlogSession() {
   const identity = useState<Session | null>('blog-session', () => null);
   const request = useRequestFetch();
+  const router = useRouter();
   /** Refreshes the server-owned session. @returns Current identity, or a guest. */
   async function refresh(): Promise<Session | null> {
     identity.value = await request<Session | null>('/api/auth/session');
@@ -17,7 +19,7 @@ export function useBlogSession() {
   async function logout(): Promise<void> {
     await mutate('/api/auth/logout', 'POST');
     identity.value = null;
-    await navigateTo('/');
+    await navigateTo(localizedPath('/', pathLanguage(router.currentRoute.value.path)));
   }
   return { identity, refresh, mutate, logout };
 }

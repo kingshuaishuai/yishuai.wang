@@ -12,15 +12,18 @@
 .note-cover { width: 100%; max-height: 300px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--qk-radius-group); display: block; margin-block: 16px; }
 .author-line { display: flex; gap: 10px; align-items: center; margin-top: 22px; font-size: 12px; flex-wrap: wrap; }
 .reading-time { margin-left: 10px; color: var(--qk-color-text-tertiary); }
-.reading-layout { display: grid; grid-template-columns: minmax(0, 720px) 180px; gap: 64px; align-items: start; }
+.reading-layout { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 56px; align-items: start; }
 .reading-body { min-width: 0; --qk-type-body-font-size: 16px; --qk-type-body-line-height: 1.95; --qk-type-section-title-font-size: 23px; --qk-type-page-title-font-size: 28px; --qk-type-code-font-size: 13px; }
-.reading-body h2 { scroll-margin-top: 32px; }
+.reading-body :is(h2, h3) { scroll-margin-top: 40px; }
 .reading-body .qk-prose { color: var(--qk-color-text-primary); }
-.reading-outline { position: sticky; top: 40px; padding-top: 8px; display: flex; flex-direction: column; align-items: start; gap: 18px; }
-.reading-outline > .eyebrow { margin-bottom: 8px; }
-.reading-outline button { background: none; border: none; padding: 0; font-size: 13px; color: var(--qk-color-text-tertiary); text-align: left; line-height: 1.8; cursor: pointer; }
-.reading-outline button:hover { color: var(--qk-color-text-accent); }
-.outline-note { color: var(--qk-color-text-tertiary); font-size: 12px; line-height: 1.9; border-top: 1px solid var(--qk-color-border-subtle); margin-top: 18px; padding-top: 24px; width: 100%; }
+ .reading-column { min-width: 0; }
+.reading-outline { position: sticky; top: 28px; padding-top: 24px; min-width: 0; max-height: calc(100dvh - 56px); overflow-y: auto; }
+.reading-outline-mobile { display: none; margin-bottom: 24px; }
+.reading-outline a, .reading-outline-mobile a { font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.reading-outline a[aria-current='location'], .reading-outline-mobile a[aria-current='location'] { background: var(--qk-color-action-primary); color: var(--qk-color-text-on-accent); font-weight: 600; }
+.outline-note { display: block; color: var(--qk-color-text-tertiary); font-size: 12px; line-height: 1.9; border-top: 1px solid var(--qk-color-border-subtle); margin-top: 24px; padding-top: 20px; }
+.article-languages { display: inline-flex; gap: 12px; margin-left: auto; }
+.article-languages a[aria-current] { color: var(--qk-color-text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
 .article-colophon { padding-top: 44px; display: flex; justify-content: space-between; font-size: 12px; color: var(--qk-color-text-tertiary); }
 .next-article { border-top: 1px solid var(--qk-color-border-subtle); margin-top: 48px; padding-top: 32px; display: grid; grid-template-columns: 1fr 20px; gap: 14px; }
 .next-article > .eyebrow { grid-column: 1 / -1; }
@@ -45,7 +48,7 @@
 .project-footnote { margin-top: 60px; max-width: 580px; }
 .project-footnote p { margin-block: 24px; color: var(--qk-color-text-secondary); line-height: 1.9; }
 @media (max-width: 1000px) { .reading-layout { grid-template-columns: minmax(0, 1fr) 145px; gap: 44px; } }
-@media (max-width: 800px) { .reading-layout { grid-template-columns: 1fr; } .reading-outline { display: none; } .reading-header h1 { font-size: 32px; } }
+@media (max-width: 800px) { .reading-layout { grid-template-columns: 1fr; } .reading-outline { display: none; } .reading-outline-mobile { display: block; } .reading-header h1 { font-size: 32px; } }
 @media (max-width: 600px) {
   .article-filters { flex-direction: column; align-items: stretch; gap: 20px; }
   .article-filters > :last-child { width: 100%; }
@@ -82,3 +85,8 @@
 .format-link:hover strong { color: var(--qk-color-text-accent); }
 @media (max-width: 600px) { .article-markdown { font-size: 12px; } .reading-header h1 { font-size: 27px; } .subscribe-feed { padding-top: 24px; } }
 @media (max-width: 360px) { .author-line { gap: 8px; } .reading-time { margin-left: 0; } }
+
+.article-filter-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.article-filters { flex-wrap: wrap; gap: 16px; }
+.article-language-hint { font-size: 12px; color: var(--qk-color-text-tertiary); margin-bottom: 12px; }
+.feed-language-options { margin: 20px 0; }

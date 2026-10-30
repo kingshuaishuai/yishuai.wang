@@ -1,4 +1,5 @@
 import { defineEventHandler, setHeader, setResponseStatus } from 'h3';
+import { postPath } from '../../../shared/language';
 import { input } from '../../micropub/input';
 import { authorize, requireScope } from '../../micropub/auth';
 import { errorResponse, mpError } from '../../micropub/errors';
@@ -19,7 +20,7 @@ export default defineEventHandler(async event => {
       if (publish && !canPublish(content)) throw mpError(400, 'Content is required.');
       let post = await createPost(db, String(useRuntimeConfig(event).ownerGithubId), content, data.slug || (typeof properties['mp-slug']?.[0] === 'string' ? properties['mp-slug'][0] : undefined));
       if (publish) post = await transitionPost(db, post.id, post.version, 'publish');
-      setHeader(event, 'Location', origin + (post.kind === 'article' ? `/articles/${post.slug}` : `/life/${post.id}`));
+      setHeader(event, 'Location', origin + postPath(post));
       setResponseStatus(event, 201); return '';
     }
     const row = await postFromUrl(db, data.url, origin);

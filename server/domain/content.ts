@@ -11,6 +11,7 @@ function validCover(value: string): boolean {
   catch { return false; }
 }
 export const contentSchema = z.object({
+  language: z.enum(['zh', 'en']).default('zh'),
   kind: z.enum(['article', 'note']), title: z.string().trim().max(200).default(''),
   summary: z.string().trim().max(500).default(''), markdown: z.string().max(200000).default(''),
   coverUrl: z.string().trim().max(2048).refine(validCover, '封面地址无效。').default(''),

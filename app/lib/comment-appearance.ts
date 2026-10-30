@@ -3,8 +3,10 @@ import { Prec } from '@quirekit/cm-state';
 import { EditorView, placeholder } from '@quirekit/cm-view';
 
 /** Public CodeMirror theme extension keeps MSFE's input and scroll ownership intact. */
-export const commentAppearance = Extension.create({
+export const commentAppearance = Extension.create<{ placeholder: string }>({
   name: 'blog-comment-appearance',
+  /** @returns Default copy, overridden by the host interface language. */
+  addOptions() { return { placeholder: '写下你的想法，让讨论从这里开始…' }; },
   /** @returns Host typography and bounded native scrolling, using QuireKit tokens. */
   addCodeMirrorExtensions() {
     return Prec.highest([
@@ -18,7 +20,7 @@ export const commentAppearance = Extension.create({
         '.cm-cursor': { borderLeftColor: 'var(--qk-color-text-accent)' },
         '.cm-activeLine': { backgroundColor: 'transparent' },
       }),
-      placeholder('写下你的想法，让讨论从这里开始…'),
+      placeholder(this.options.placeholder),
     ]);
   },
 });

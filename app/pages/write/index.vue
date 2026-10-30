@@ -1,5 +1,6 @@
 <script setup lang="ts">
+const { t, localePath } = useBlogLocale();
 definePageMeta({ middleware: 'owner' });
-await navigateTo('/manage', { redirectCode: 302 });
+await navigateTo(localePath('/manage'), { redirectCode: 302 });
 </script>
-<template><p>正在打开创作管理…</p></template>
+<template><p>{{ t('正在打开创作管理…') }}</p></template>

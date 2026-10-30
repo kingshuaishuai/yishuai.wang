@@ -1,7 +1,16 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-29',
+  // Production builds must not overwrite Vite's live development files.
+  $production: { buildDir: '.nuxt-production' },
   build: { transpile: [/@quirekit\//, /^@lezer\//, 'katex', '@ark-ui/vue'] },
   devtools: { enabled: false },
+  hooks: {
+    'pages:extend'(pages) {
+      // Both languages share components; URL identity keeps SSR and navigation deterministic.
+      const originals = [...pages];
+      pages.push(...originals.map(page => ({ ...page, name: `en-${page.name}`, path: `/en${page.path === '/' ? '' : page.path}` })));
+    },
+  },
   sourcemap: { client: false, server: false },
   css: ['@quirekit/unocss-preset/quirekit.css', '@quirekit/incremark/styles.css',
     '~/assets/base.css', '~/assets/home.css', '~/assets/content.css', '~/assets/account.css',
@@ -26,10 +35,14 @@ export default defineNuxtConfig({
       '/manage/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/login': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/account': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/en/write/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/en/manage/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/en/login': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/en/account': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
     },
   },
   // Lezer's node properties must share one runtime across language parsers and SSR highlighting.
-  vite: { $server: { resolve: { noExternal: [/@quirekit\//, /^@lezer\//, /katex/] } }, optimizeDeps: { include: ['@quirekit/ui', '@quirekit/ui/vue', '@quirekit/incremark/vue', '@quirekit/md-editor/vue', '@quirekit/msfe-core', '@quirekit/msfe-starter-kit', '@quirekit/msfe-vue', '@quirekit/cm-state', '@quirekit/cm-view', '@quirekit/inkwash', '@quirekit/inkwash/vue', 'uuid'] }, resolve: { dedupe: ['vue', '@quirekit/cm-state', '@quirekit/cm-view', '@lezer/common', '@lezer/highlight', '@lezer/lr'] },
+  vite: { $server: { resolve: { noExternal: [/@quirekit\//, /^@lezer\//, /katex/] } }, optimizeDeps: { include: ['@lezer/highlight', '@quirekit/cm-language', '@quirekit/md-editor', '@quirekit/ui', '@quirekit/ui/vue', '@quirekit/incremark/vue', '@quirekit/md-editor/vue', '@quirekit/msfe-core', '@quirekit/msfe-starter-kit', '@quirekit/msfe-vue', '@quirekit/cm-state', '@quirekit/cm-view', '@quirekit/inkwash', '@quirekit/inkwash/vue', 'uuid'] }, resolve: { dedupe: ['vue', '@quirekit/cm-state', '@quirekit/cm-view', '@lezer/common', '@lezer/highlight', '@lezer/lr'] },
     ssr: { noExternal: [/^@quirekit\//, /^@lezer\//, '@ark-ui/vue', 'katex'] },
   },
 });

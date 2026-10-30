@@ -25,8 +25,8 @@
     "preview": "tsx scripts/preview.ts",
     "db:migrate": "wrangler d1 migrations apply BLOG_DB --local",
     "db:migrate:production": "wrangler d1 migrations apply BLOG_DB --remote --config wrangler.jsonc --env production",
-    "deploy:check": "wrangler deploy --config .output/server/wrangler.json --env production --dry-run",
-    "deploy": "pnpm build && wrangler deploy --config .output/server/wrangler.json --env production",
+    "deploy:check": "wrangler deploy --config .output/server/wrangler.json --env production --minify --dry-run",
+    "deploy": "pnpm build && wrangler deploy --config .output/server/wrangler.json --env production --minify",
     "db:seed": "tsx scripts/seed.ts",
     "postinstall": "nuxt prepare"
   },

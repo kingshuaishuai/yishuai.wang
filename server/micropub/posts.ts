@@ -1,24 +1,28 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import type { PostRow } from '../domain/types';
 import type { Content, DraftPost } from '../../shared/types';
+import { postPath } from '../../shared/language';
 import { mpError } from './errors';
-import { draftView, getPost } from '../domain/posts';
+import { draftView, getPost, assertPermanentIdentity } from '../domain/posts';
 import { canPublish } from '../domain/content';
 /** @param db - Database. @param value - Client supplied entry URL. @param origin - Trusted site origin. @returns Private row addressed by a canonical local URL only. */
 export async function postFromUrl(db: D1Database, value: unknown, origin: string): Promise<PostRow> {
   if (typeof value !== 'string') throw mpError(400, 'A post URL is required.');
   let url: URL; try { url = new URL(value); } catch { throw mpError(400, 'Invalid post URL.'); }
   if (url.origin !== origin || url.search || url.hash || url.username || url.password) throw mpError(400, 'URL must identify a post on this website.');
-  const match = /^\/(articles|life)\/([a-z0-9-]+)$/.exec(url.pathname);
+  const match = /^\/(?:en\/)?(articles|life)\/([a-z0-9-]+)$/.exec(url.pathname);
   if (!match) throw mpError(400, 'Invalid post URL.');
   const row = await db.prepare(`SELECT * FROM posts WHERE ${match[1] === 'articles' ? 'slug' : 'id'}=? AND kind=?`).bind(match[2], match[1] === 'articles' ? 'article' : 'note').first<PostRow>();
   if (!row) throw mpError(404, 'Post not found.');
+  if (url.pathname !== postPath(draftView(row))) throw mpError(400, 'Use the canonical language URL.');
   return row;
 }
 /** Atomically advances both snapshots for a Micropub update, or only the draft when requested.
  * @param db - Database. @param before - Optimistic base. @param content - Validated next content. @param publish - Requested visibility. @returns Owner projection.
  */
 export async function updatePost(db: D1Database, before: PostRow, content: Content, publish: boolean): Promise<DraftPost> {
+  assertPermanentIdentity(before, content);
+  if (draftView(before).language !== content.language) throw mpError(409, 'Change a draft language in the web editor.');
   if (before.status === 'deleted') throw mpError(409, 'Restore this post before updating it.');
   if (publish && before.status === 'published' && before.draft_json !== before.published_json) throw mpError(409, 'This post has unpublished web-editor changes. Save as draft or resolve them before publishing.');
   if (publish && !canPublish(content)) throw mpError(400, 'Content and an article title are required.');

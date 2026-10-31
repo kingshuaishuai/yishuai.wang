@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     ownerGithubId: '', githubClientId: '', githubClientSecret: '', aiSettingsSecret: '',
     indieauthTokenEndpoint: '', indieauthAuthorizationEndpoint: '',
     indieauthIntrospectionEndpoint: '', indieauthIntrospectionAuthorization: '',
-    public: { siteUrl: 'https://yishuai.wang', indexable: false },
+    public: { siteUrl: 'https://yishuai.wang', indexable: false, friendRequestEmail: 'kwyishuai@163.com' },
   },
   app: { head: {
     htmlAttrs: { lang: 'zh-CN', 'data-qk-theme': 'ink', 'data-qk-scheme': 'light', class: 'qk-scrollbars' },

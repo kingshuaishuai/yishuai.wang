@@ -8,7 +8,7 @@ const { identity, refresh } = useBlogSession();
 useVisitTracking();
 const scheme = useCookie<'light' | 'dark'>('blog-scheme', { default: () => 'light', sameSite: 'lax', maxAge: 31536000 });
 const dark = computed(() => scheme.value === 'dark');
-const nav = computed(() => [{ label: t('首页', 'Home'), path: '/' }, { label: t('文章', 'Articles'), path: '/articles' }, { label: t('项目', 'Projects'), path: '/projects' }, { label: t('生活', 'Life'), path: '/life' }, { label: t('关于', 'About'), path: '/about' }]);
+const nav = computed(() => [{ label: t('首页', 'Home'), path: '/' }, { label: t('文章', 'Articles'), path: '/articles' }, { label: t('项目', 'Projects'), path: '/projects' }, { label: t('生活', 'Life'), path: '/life' }, { label: t('友链', 'Friends'), path: '/friends' }, { label: t('关于', 'About'), path: '/about' }]);
 const writing = computed(() => basePath.value.startsWith('/write'));
 const config = useRuntimeConfig();
 const publishingOpen = ref(false);
@@ -52,7 +52,7 @@ onMounted(() => { refresh().catch(() => {}); });
       <main id="main-content" tabindex="-1" :class="['site-width', { 'writing-width': writing }]"><NuxtPage /></main>
       <footer v-if="!writing" class="site-footer site-width">
         <ClientOnly><LazyInkPainting :page="basePath" placement="footer" /></ClientOnly>
-        <div class="footer-top"><div><SiteBrand /><p>{{ t('作品、文字，和日常的回声。', 'Projects, writing, and everyday life.') }}</p></div><div class="footer-links"><NuxtLink :to="localePath('/subscribe')"><RssIcon /> {{ t('RSS 订阅', 'RSS feeds') }}</NuxtLink><a href="/llms.txt">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
+        <div class="footer-top"><div><SiteBrand /><p>{{ t('作品、文字，和日常的回声。', 'Projects, writing, and everyday life.') }}</p></div><div class="footer-links"><NuxtLink :to="localePath('/friends')">{{ t('友链', 'Friends') }}</NuxtLink><NuxtLink :to="localePath('/subscribe')"><RssIcon /> {{ t('RSS 订阅', 'RSS feeds') }}</NuxtLink><a href="/llms.txt">llms.txt <QuireIcon name="arrowUpRight" :size="12" /></a></div></div>
         <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">{{ t('开发环境', 'Development preview') }}</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="identity ? localePath('/account') : { path: localePath('/login'), query: { returnTo: route.fullPath } }">{{ identity ? t('个人中心', 'Account') : t('登录', 'Sign in') }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
       </footer>
     </div>

@@ -13,7 +13,7 @@ const scene = computed(() => {
   if (props.placement !== 'heading') return mountains;
   if (props.page.startsWith('/articles')) return bamboo;
   if (props.page === '/life' || props.page === '/subscribe') return waves;
-  if (props.page === '/about' || props.page === '/login') return plum;
+  if (props.page === '/about' || props.page === '/login' || props.page === '/friends') return plum;
   if (props.page === '/projects') return architecture;
   return mountains;
 });

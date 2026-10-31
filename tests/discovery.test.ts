@@ -40,7 +40,9 @@ it('uses public metadata only, preserves lastmod for draft edits and removes wit
   expect(JSON.stringify(entries)).not.toMatch(/PRIVATE|private body|English body|Not an index payload/);
   expect(entries[0]!.translations).toEqual(entries[1]!.translations);
   expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
-  expect(xml.match(/<url>/g)).toHaveLength(14);
+  expect(xml.match(/<url>/g)).toHaveLength(16);
+  expect(xml).toContain(`<loc>${origin}/friends</loc>`);
+  expect(xml).toContain(`<loc>${origin}/en/friends</loc>`);
   expect(xml).toContain(`hreflang="en" href="${origin}/en/articles/${en.slug}"`);
   expect(xml).not.toMatch(/<loc>[^<]*\/(manage|write|analytics|api)\b/);
   expect(llms(entries, origin)).toContain('/articles/discovery.md');

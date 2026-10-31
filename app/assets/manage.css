@@ -30,4 +30,5 @@
 .writer-error { margin:16px 0; }
 @media(max-width:600px) { .manage-post { flex-direction:column; align-items:start; gap:12px; } .manage-heading h1 { font-size:26px; } }
 
-.manage-settings { margin-left: auto; }
+.manage-settings { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.manage-stats-link { font-size: 13px; font-weight: 400; padding-block: 10px; }

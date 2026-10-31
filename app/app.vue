@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useVisitTracking } from './composables/useVisitTracking';
 import { quireIconRegistry } from '@quirekit/ui';
 import { QuireButton, QuireIcon, QuireIconButton, QuireIconProvider, QuireLocaleProvider } from '@quirekit/ui/vue';
 const route = useRoute();
 const { t, locale, basePath, localePath, switchPath } = useBlogLocale();
 const { identity, refresh } = useBlogSession();
+useVisitTracking();
 const scheme = useCookie<'light' | 'dark'>('blog-scheme', { default: () => 'light', sameSite: 'lax', maxAge: 31536000 });
 const dark = computed(() => scheme.value === 'dark');
 const nav = computed(() => [{ label: t('首页', 'Home'), path: '/' }, { label: t('文章', 'Articles'), path: '/articles' }, { label: t('项目', 'Projects'), path: '/projects' }, { label: t('生活', 'Life'), path: '/life' }, { label: t('关于', 'About'), path: '/about' }]);
@@ -38,7 +40,7 @@ onMounted(() => { refresh().catch(() => {}); });
         <nav v-if="!writing" class="desktop-nav" :aria-label="t('主导航', 'Main navigation')">
           <NuxtLink v-for="item in nav" :key="item.path" :to="localePath(item.path)" :aria-current="basePath === item.path || (item.path !== '/' && basePath.startsWith(item.path + '/')) ? 'page' : undefined">{{ item.label }}</NuxtLink>
           <NuxtLink v-if="identity && !identity.user.owner" :to="localePath('/account')" :aria-current="basePath === '/account' ? 'page' : undefined">{{ t('个人中心', 'Account') }}</NuxtLink>
-        <NuxtLink v-if="identity?.user.owner" :to="localePath('/manage')" :aria-current="basePath.startsWith('/manage') ? 'page' : undefined">{{ t('创作管理', 'Manage') }}</NuxtLink>
+        <NuxtLink v-if="identity?.user.owner" :to="localePath('/manage')" :aria-current="basePath.startsWith('/manage') || basePath === '/analytics' ? 'page' : undefined">{{ t('创作管理', 'Manage') }}</NuxtLink>
           <QuireButton v-if="identity?.user.owner" class="publishing-nav-trigger" variant="text" size="md" aria-haspopup="dialog" :aria-expanded="publishingOpen" aria-controls="publishing-access-dialog" @click="publishingOpen = true">{{ t('发布接入', 'Publishing access') }}</QuireButton>
         </nav>
         <div class="header-actions"><NuxtLink class="language-switch" :to="switchPath" :lang="locale === 'zh' ? 'en' : 'zh-CN'" :aria-label="t('切换到英文', 'Switch to Chinese')">{{ t('EN', '中文') }}</NuxtLink>

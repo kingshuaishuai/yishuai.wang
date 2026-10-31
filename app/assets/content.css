@@ -12,6 +12,7 @@
 .note-cover { width: 100%; max-height: 300px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--qk-radius-group); display: block; margin-block: 16px; }
 .author-line { display: flex; gap: 10px; align-items: center; margin-top: 22px; font-size: 12px; flex-wrap: wrap; }
 .reading-time { margin-left: 10px; color: var(--qk-color-text-tertiary); }
+.article-views { display: inline-flex; align-items: center; gap: 5px; color: var(--qk-color-text-tertiary); font-variant-numeric: tabular-nums; }
 .reading-layout { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 56px; align-items: start; }
 .reading-body { min-width: 0; --qk-type-body-font-size: 16px; --qk-type-body-line-height: 1.95; --qk-type-section-title-font-size: 23px; --qk-type-page-title-font-size: 28px; --qk-type-code-font-size: 13px; }
 .reading-body :is(h2, h3) { scroll-margin-top: 40px; }

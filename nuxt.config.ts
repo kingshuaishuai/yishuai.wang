@@ -34,6 +34,8 @@ export default defineNuxtConfig({
       '/write/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/manage/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/login': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/analytics': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
+      '/en/analytics': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/account': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/en/write/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },
       '/en/manage/**': { headers: { 'cache-control': 'private, no-store', 'x-robots-tag': 'noindex' } },

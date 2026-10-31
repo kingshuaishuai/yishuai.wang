@@ -1,4 +1,5 @@
 import type { AiSummary } from './ai';
+import type { PublicViewCount } from './analytics';
 /** Supported content languages; missing historical values mean Chinese. */
 export type ContentLanguage = 'zh' | 'en';
 /** A public language version, emitted only after it has been published. */
@@ -13,6 +14,7 @@ export type Content = {
 export type PublicPost = Content & {
   id: string; slug: string; url: string; publishedAt: string; updatedAt: string;
   date: string; html: string; headings: { id: string; title: string }[]; translations: Translation[]; aiSummary?: AiSummary | null;
+  viewCount?: PublicViewCount;
 };
 /** Lightweight index entry; lists never carry complete article bodies. */
 export type PublicPostSummary = Pick<PublicPost, 'id' | 'slug' | 'kind' | 'language' | 'title' | 'summary' | 'coverUrl' | 'category' | 'tags' | 'url' | 'publishedAt' | 'updatedAt' | 'date'>;

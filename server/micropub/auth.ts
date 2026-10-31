@@ -1,5 +1,7 @@
 import { getHeader, type H3Event } from 'h3';
 import { mpError } from './errors';
+import { nativeTokenScopes } from '../domain/publishing/tokens';
+import { introspectToken } from './introspection';
 /** @param value - Introspection response from the configured server. @param origin - Exact author profile origin. @returns Validated granted scopes. */
 export function verifiedScopes(value: unknown, origin: string): Set<string> {
   const data = value as { active?: unknown; me?: unknown; scope?: unknown; exp?: unknown };
@@ -10,7 +12,7 @@ export function verifiedScopes(value: unknown, origin: string): Set<string> {
   if (data.exp !== undefined && (!Number.isFinite(Number(data.exp)) || Number(data.exp) <= Date.now() / 1000)) throw mpError(401, 'Expired token.');
   return new Set(typeof data.scope === 'string' ? data.scope.split(/\s+/).filter(Boolean) : []);
 }
-/** @param event - Client request. @param formToken - Optional form-encoded bearer credential. @returns Current scopes; no tokens are cached or persisted. */
+/** @param event - Client request. @param formToken - Optional form-encoded bearer credential. @returns Scopes verified on each request, including revocation and expiry. */
 export async function authorize(event: H3Event, formToken?: string): Promise<Set<string>> {
   const header = getHeader(event, 'authorization');
   const bearer = header?.match(/^Bearer ([A-Za-z0-9._~+\/=-]+)$/i)?.[1];
@@ -19,16 +21,12 @@ export async function authorize(event: H3Event, formToken?: string): Promise<Set
   const token = bearer || formToken;
   if (!token || token.length > 4096) throw mpError(401, 'Bearer token required.');
   const config = useRuntimeConfig(event);
+  const native = await nativeTokenScopes(bindings(event).BLOG_DB, String(config.ownerGithubId), token);
+  if (native) return native;
   if (!config.indieauthIntrospectionEndpoint) throw mpError(503, 'IndieAuth introspection is not configured.');
   const endpoint = new URL(config.indieauthIntrospectionEndpoint);
   if (endpoint.protocol !== 'https:') throw mpError(503, 'Introspection requires HTTPS.');
-  let response: unknown;
-  try {
-    response = await $fetch(endpoint.href, { method: 'POST', timeout: 10000, retry: 0, redirect: 'error',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded', Authorization: config.indieauthIntrospectionAuthorization || `Bearer ${token}` },
-      body: new URLSearchParams({ token }).toString(),
-    });
-  } catch { throw mpError(401, 'Token verification failed.'); }
+  const response = await introspectToken(endpoint.href, token, config.indieauthIntrospectionAuthorization || '');
   return verifiedScopes(response, siteOrigin(event));
 }
 /** @param scopes - Verified permission set. @param required - Operation-specific authority. */

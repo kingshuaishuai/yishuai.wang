@@ -14,6 +14,7 @@ import { getPublicPost, getPost, draftView, savePost, transitionPost } from '../
 import type { Bindings } from '../server/domain/types';
 
 let platform: PlatformProxy<Bindings>, server: Server, origin: string;
+const nativeFetch = fetch;
 beforeAll(async () => {
   platform = await getPlatformProxy<Bindings>({ persist: false, envFiles: [], remoteBindings: false });
   for (const file of (await readdir(new URL('../migrations/', import.meta.url))).filter(f => f.endsWith('.sql')).sort()) {
@@ -23,10 +24,11 @@ beforeAll(async () => {
   vi.stubGlobal('bindings', bindings); vi.stubGlobal('readBytes', readBytes); vi.stubGlobal('rateLimit', rateLimit);
   vi.stubGlobal('session', async () => null); vi.stubGlobal('siteOrigin', () => origin);
   vi.stubGlobal('useRuntimeConfig', () => ({ ownerGithubId: 'test-owner', indieauthIntrospectionEndpoint: 'https://identity.example/token' }));
-  vi.stubGlobal('$fetch', async (url: string, options: { body: string }) => {
-    expect(url).toBe('https://identity.example/token');
-    const token = new URLSearchParams(options.body).get('token');
-    return { active: token !== 'invalid', me: origin + '/', scope: token === 'create-only' ? 'create' : 'create update delete undelete' };
+  vi.stubGlobal('fetch', async (url: string, options?: RequestInit) => {
+    if (url !== 'https://identity.example/token') return nativeFetch(url, options);
+    expect(options?.redirect).toBe('manual');
+    const token = new URLSearchParams(String(options?.body)).get('token');
+    return Response.json({ active: token !== 'invalid', me: origin + '/', scope: token === 'create-only' ? 'create' : 'create update delete undelete' });
   });
   const router = createRouter().get('/api/micropub', micropubGet).post('/api/micropub', micropubPost).post('/api/micropub/media', mediaPost).get('/media/:id', mediaGet);
   const app = createApp({ debug: false });

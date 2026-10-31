@@ -57,6 +57,7 @@ for (const path of ['/', '/articles', '/life', '/projects', '/about', '/en', '/e
   assert.match(html, path.startsWith('/en') ? /<html[^>]*lang="en"/ : /<html[^>]*lang="zh-CN"/);
   assert.match(html, /hreflang="en"/);
   assert.match(html, /hreflang="zh-CN"/);
+  if (path === '/') assert.match(result.headers.get('link') || '', /rel="micropub"/);
 }
 
 const robots = await (await response('/robots.txt')).text();
@@ -71,6 +72,7 @@ assert.ok((await (await response('/llms.txt')).text()).includes(origin));
 assert.equal((await (await response('/api/auth/status')).json()).github, true);
 await response('/api/owner/posts', 401);
 await response('/api/owner/taxonomy', 401);
+await response('/api/owner/publishing', 401);
 await response('/api/micropub?q=config', 401);
 await response('/articles/no-such-deployment-check', 404);
 for (const path of ['/manage', '/account', '/write', '/en/manage', '/en/account', '/en/write']) {

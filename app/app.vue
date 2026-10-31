@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { quireIconRegistry } from '@quirekit/ui';
-import { QuireIcon, QuireIconButton, QuireIconProvider, QuireLocaleProvider } from '@quirekit/ui/vue';
+import { QuireButton, QuireIcon, QuireIconButton, QuireIconProvider, QuireLocaleProvider } from '@quirekit/ui/vue';
 const route = useRoute();
 const { t, locale, basePath, localePath, switchPath } = useBlogLocale();
 const { identity, refresh } = useBlogSession();
@@ -9,6 +9,12 @@ const dark = computed(() => scheme.value === 'dark');
 const nav = computed(() => [{ label: t('首页', 'Home'), path: '/' }, { label: t('文章', 'Articles'), path: '/articles' }, { label: t('项目', 'Projects'), path: '/projects' }, { label: t('生活', 'Life'), path: '/life' }, { label: t('关于', 'About'), path: '/about' }]);
 const writing = computed(() => basePath.value.startsWith('/write'));
 const config = useRuntimeConfig();
+const publishingOpen = ref(false);
+/** @returns The visible navigation control after a publishing dialog closes. */
+function publishingFocus(): HTMLElement | null {
+  const desktop = document.querySelector<HTMLElement>('.publishing-nav-trigger');
+  return desktop?.getClientRects().length ? desktop : document.querySelector<HTMLElement>('.mobile-toggle');
+}
 useHead(() => ({ htmlAttrs: { lang: locale.value === 'zh' ? 'zh-CN' : 'en', 'data-qk-scheme': dark.value ? 'dark' : 'light' }, link: [
   { rel: 'alternate', type: 'application/rss+xml', title: t('Yishuai 的文章', 'Articles by Yishuai'), href: localePath('/feed.xml') },
 ] }));
@@ -33,11 +39,12 @@ onMounted(() => { refresh().catch(() => {}); });
           <NuxtLink v-for="item in nav" :key="item.path" :to="localePath(item.path)" :aria-current="basePath === item.path || (item.path !== '/' && basePath.startsWith(item.path + '/')) ? 'page' : undefined">{{ item.label }}</NuxtLink>
           <NuxtLink v-if="identity && !identity.user.owner" :to="localePath('/account')" :aria-current="basePath === '/account' ? 'page' : undefined">{{ t('个人中心', 'Account') }}</NuxtLink>
         <NuxtLink v-if="identity?.user.owner" :to="localePath('/manage')" :aria-current="basePath.startsWith('/manage') ? 'page' : undefined">{{ t('创作管理', 'Manage') }}</NuxtLink>
+          <QuireButton v-if="identity?.user.owner" class="publishing-nav-trigger" variant="text" size="md" aria-haspopup="dialog" :aria-expanded="publishingOpen" aria-controls="publishing-access-dialog" @click="publishingOpen = true">{{ t('发布接入', 'Publishing access') }}</QuireButton>
         </nav>
         <div class="header-actions"><NuxtLink class="language-switch" :to="switchPath" :lang="locale === 'zh' ? 'en' : 'zh-CN'" :aria-label="t('切换到英文', 'Switch to Chinese')">{{ t('EN', '中文') }}</NuxtLink>
           <NuxtLink v-if="!writing" class="header-rss" :to="localePath('/subscribe')" :aria-label="t('RSS 订阅', 'RSS feeds')"><RssIcon /></NuxtLink>
           <QuireIconButton :label="dark ? t('切换浅色', 'Switch to light mode') : t('切换深色', 'Switch to dark mode')" size="lg" @click="toggleTheme"><QuireIcon :name="dark ? 'sun' : 'moon'" /></QuireIconButton>
-          <SiteMobileNav v-if="!writing" :items="nav" :identity="identity" />
+          <SiteMobileNav v-if="!writing" :items="nav" :identity="identity" @publishing="publishingOpen = true" />
         </div>
       </header>
       <main id="main-content" tabindex="-1" :class="['site-width', { 'writing-width': writing }]"><NuxtPage /></main>
@@ -47,5 +54,6 @@ onMounted(() => { refresh().catch(() => {}); });
         <div class="footer-bottom"><span>© {{ new Date().getFullYear() }} Yishuai · Built with <a href="https://quirekit.com" target="_blank" rel="noreferrer">QuireKit</a></span><span v-if="String(config.public.indexable) !== 'true'" class="preview-caption">{{ t('开发环境', 'Development preview') }}</span><NuxtLink v-if="!identity?.user.owner" class="writer-link" :to="identity ? localePath('/account') : { path: localePath('/login'), query: { returnTo: route.fullPath } }">{{ identity ? t('个人中心', 'Account') : t('登录', 'Sign in') }} <QuireIcon name="arrowUpRight" :size="12" /></NuxtLink></div>
       </footer>
     </div>
+    <ClientOnly><LazyPublishingAccess v-if="identity?.user.owner" v-model:open="publishingOpen" :return-focus="publishingFocus" /></ClientOnly>
   </QuireIconProvider></QuireLocaleProvider>
 </template>

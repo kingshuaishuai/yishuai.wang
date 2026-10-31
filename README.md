@@ -38,7 +38,7 @@ pnpm dev
 - **页面外观**：全站使用 QuireKit Ink 明暗主题，每页至少占满一屏；写作操作栏合并排列，状态栏随正文撑到底部。山景相对正文定位，宽屏左侧有淡远山。首页提供 QuireKit GitHub 组织及 X 账号入口；按钮图标使用 QuireKit 的 leading/trailing 插槽。手机导航使用 QuireKit Popover 浮层，不挤占正文；文章语言与分类使用文字式 Select。
 - **SEO**：真实路径、服务端完整正文、canonical、Open Graph、BlogPosting、sitemap、404/410。真实已发布语言版本输出互相对应的 hreflang。开发环境默认禁止索引，私有页面始终 noindex。
 - **开放阅读**：`/feed.xml`、`/life/feed.xml` 为中文订阅，英文加 `/en` 前缀，`?lang=all` 可订阅全部。文章和短记在永久地址后加 `.md` 获取原文，总站提供 `/llms.txt`。
-- **Micropub**：表单/JSON 创建，source/config 查询，replace/add/delete 更新，删除/恢复和独立图片上传端点。认证使用外部 IndieAuth introspection；需要配置后才能让实际第三方客户端登录。
+- **Micropub**：表单/JSON 创建，source/config 查询，replace/add/delete 更新，删除/恢复和独立图片上传端点。作者在右上角「发布接入」弹窗复制站点与接口，生成或撤销客户端令牌；完整令牌只显示一次，D1 只保存摘要。也兼容可选的外部 IndieAuth introspection，详见[发布接入](./docs/发布接入.md)。
 
 公开页面目前使用 SSR，静态资源交给 Workers Assets。这样发布、撤回与审核不需要等待全站重建。未将当前实现描述为 SSG；是否增加静态快照，需要同时解决撤回与缓存失效。
 
@@ -75,10 +75,10 @@ pnpm preview
 1. 在 Cloudflare 创建 D1 数据库和私有 R2 bucket，将其配置到 `env.production`。不要把 R2 设为公开桶，图片可见性由当前发布内容决定。
 2. 使用 `pnpm db:migrate:production` 应用正式迁移；不要向正式数据库运行本地示例脚本。
 3. 在忽略的 `.env.production` 中填写生产 `NUXT_GITHUB_CLIENT_ID`、`NUXT_GITHUB_CLIENT_SECRET`，执行 `pnpm exec wrangler secret bulk .env.production --config wrangler.jsonc --env production`。非敏感运行时变量在生产配置中维护；凭据仅上传到 Workers secrets，不进入 Git 或构建产物。
-4. 按 `.env.example` 配置同一个 IndieAuth 提供方的 authorization、token、introspection 地址及其要求的 introspection 认证。`me` 必须为 `https://yishuai.wang/`，按操作验证 scope；未配置时拒绝 Micropub 写入。
+4. 作者登录后通过「发布接入」生成 Micropub 令牌。若需要外部 IndieAuth 授权，再按 `.env.example` 配置同一个提供方的 authorization、token、introspection 地址及其认证；`me` 必须为 `https://yishuai.wang/`，按操作验证 scope。手动填写本站令牌的客户端无需这些外部配置。
 5. 将域名的 DNS 托管到 Cloudflare，待区域激活后运行 `pnpm deploy`，部署时自动绑定正式域名。使用 `pnpm verify:production` 检查 SSR、SEO、订阅与访客权限，再通过内置浏览器验收真实登录。只读验收支持空内容库，不会添加示例文章。
 
-正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（五项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。实际中文文章的保存、发布和封面上传已完成验收。本地草稿、用户和媒体不自动迁入正式环境。
+正式站已部署到 [yishuai.wang](https://yishuai.wang)，使用 D1 `yishuai-blog`（六项迁移已应用）与私有 R2 `yishuai-blog-media`。HTTPS、SSR、SEO、RSS、llms.txt 及访客权限已通过生产只读验收；内置浏览器验证了真实 GitHub 回调、作者管理权限与已有草稿的写作页加载。实际中文文章的保存、发布和封面上传已完成验收。本地草稿、用户和媒体不自动迁入正式环境。
 
 DNS 切换期间，验收脚本可用 `BLOG_VERIFY_ADDRESS` 指定经公共 DNS 确认的地址。该选项只影响这次检查的连接地址，保留正式域名、TLS 证书验证和全部断言，不修改系统 DNS；正常情况下直接运行 `pnpm verify:production`。
 

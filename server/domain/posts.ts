@@ -104,6 +104,23 @@ export async function transitionPost(db: D1Database, id: string, version: number
   return draftView(await getPost(db, id));
 }
 
+/** @param db - D1 binding. @param id - Explicitly confirmed entry. @param version - Revision reviewed by the author. */
+export async function permanentlyDeletePost(db: D1Database, id: string, version: number): Promise<void> {
+  // Every statement shares the revision guard inside one transaction, so stale requests leave all related data intact.
+  const revision = 'EXISTS (SELECT 1 FROM posts WHERE id=? AND version=?)';
+  const results = await db.batch([
+    db.prepare(`DELETE FROM comments WHERE post_id=? AND ${revision}`).bind(id, id, version),
+    db.prepare(`DELETE FROM ai_summaries WHERE post_id=? AND ${revision}`).bind(id, id, version),
+    // Images can be referenced by other posts and translations. Detach ownership; public access still requires a published reference.
+    db.prepare(`UPDATE media SET post_id=NULL WHERE post_id=? AND ${revision}`).bind(id, id, version),
+    db.prepare('DELETE FROM posts WHERE id=? AND version=?').bind(id, version),
+  ]);
+  if (!results.at(-1)?.meta.changes) {
+    await getPost(db, id);
+    throw createError({ statusCode: 409, message: '内容已更新，请关闭弹窗并重新确认要删除的内容。' });
+  }
+}
+
 /** @param before - Stored identity. @param content - Proposed draft. */
 export function assertPermanentIdentity(before: PostRow, content: Content): void {
   const language = JSON.parse(before.published_json || before.draft_json).language || 'zh';

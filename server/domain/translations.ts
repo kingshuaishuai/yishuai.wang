@@ -14,11 +14,11 @@ export async function ownerTranslations(db: D1Database, id: string): Promise<Pic
 /** @param db - Database. @param id - Source entry. @param language - Language to create. @returns Existing or new blank translation draft, never an automatic publication. */
 export async function createTranslation(db: D1Database, id: string, language: ContentLanguage): Promise<DraftPost> {
   const row = await getPost(db, id), source = draftView(row), group = row.translation_group || id;
-  if (row.status === 'deleted') throw createError({ statusCode: 409, message: '请先恢复这篇内容。' });
+  if (row.status === 'deleted') throw createError({ statusCode: 409, message: '已删除的内容不能创建语言版本。' });
   if (source.language === language) return source;
   const existing = await db.prepare("SELECT * FROM posts WHERE COALESCE(translation_group,id)=? AND COALESCE(json_extract(draft_json,'$.language'),'zh')=?").bind(group, language).first<PostRow>();
   if (existing) {
-    if (existing.status === 'deleted') throw createError({ statusCode: 409, message: '此语言版本已删除，请先在管理页恢复。' });
+    if (existing.status === 'deleted') throw createError({ statusCode: 409, message: '请先在创作管理中永久删除旧的语言版本，再重新创建。' });
     return draftView(existing);
   }
   try {

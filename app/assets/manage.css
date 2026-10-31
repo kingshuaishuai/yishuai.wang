@@ -11,6 +11,11 @@
 .manage-heading p { color:var(--qk-color-text-secondary); line-height:1.8; }
 .manage-actions, .manage-row-actions { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
 .manage-section { margin-top:40px; }
+.manage-notice { margin: 12px 0; font-size: 13px; }
+.post-action-summary { display: grid; gap: 12px; overflow-wrap: anywhere; }
+.post-action-summary strong { font-size: 16px; font-weight: 600; }
+.post-action-summary p { margin: 0; line-height: 1.8; font-size: 14px; }
+.post-action-summary .post-action-hint { font-size: 12px; color: var(--qk-color-text-secondary); }
 .manage-section > h2 { padding-bottom:18px; border-bottom:1px solid var(--qk-color-border-subtle); }
 .manage-post { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:18px 0; border-bottom:1px solid var(--qk-color-border-subtle); }
 .manage-post h3 { font-size:17px; font-weight:500; margin:0; overflow-wrap:anywhere; }

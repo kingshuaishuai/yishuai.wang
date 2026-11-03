@@ -1,9 +1,6 @@
 .pagination { display:flex; justify-content:center; gap:24px; margin:32px 0; font-size:14px; }
 .article-search { display:flex; align-items:center; gap:8px; }
 .honeypot { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
-.published-html { line-height:1.9; overflow-wrap:anywhere; }
-.published-html p, .published-html ul, .published-html pre { margin-block:1.25em; }
-.published-html img { max-width:100%; height:auto; }
 .manage-heading { display:flex; align-items:start; justify-content:space-between; gap:20px; padding:32px 0 24px; }
 .manage-profile { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--qk-color-text-tertiary); }
 .manage-profile:hover { color: var(--qk-color-text-accent); }
